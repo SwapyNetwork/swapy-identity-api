@@ -1,0 +1,23 @@
+{
+  "name": "swapy-identity-api",
+  "version": "1.0.0",
+  "description": "javascript api to manage Swapy Identities ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "ipfs-api": "^17.3.0",
+    "js-sha3": "^0.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwapyNetwork/swapy-identity-api.git"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/SwapyNetwork/swapy-identity-api/issues"
+  },
+  "homepage": "https://github.com/SwapyNetwork/swapy-identity-api#readme"
+}
