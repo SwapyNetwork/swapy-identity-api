@@ -7,9 +7,12 @@ const setProvider = (host,port,protocol) => {
     ipfs = ipfsAPI({host, port, protocol})
 }
 
-const initTree = async () => {
+const initTree = async (insertions = []) => {
     const tree = treeLib.initTree()
-    const ipfsHash = await saveData(JSON.stringify(tree))
+    if(insertions) {
+        const result = await handleInsertions(tree, insertions)    
+    }
+    const ipfsHash = await saveTree(tree)
     return ipfsHash
 }
 
