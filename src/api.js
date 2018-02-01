@@ -65,6 +65,7 @@ const createMultiSigIdentity = async (owners, required, profileDataNodes = []) =
     return IdentityProtocolContract.methods
     .createMultiSigIdentity(web3.utils.asciiToHex(profileHash), owners, required)
     .send({
+        from: web3.eth.defaultAccount,
         gas: 4500000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
@@ -92,6 +93,7 @@ const signTransaction = (identityAddress, transactionId) => {
     return MultiSigIdentityContract.methods
     .signTransaction(transactionId)
     .send({
+        from: web3.eth.defaultAccount,
         gas: 150000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
@@ -108,11 +110,12 @@ const signTransaction = (identityAddress, transactionId) => {
 const insertProfileData = async (profileNodes, identityAddress, multiSig = false) => {
     if(!multiSig) {
         IdentityContract.options.address = identityAddress
-        const profileHash = await IdentityContract.methods.financialData.call()
-        const newHash = await ipfs.insertNodes(profileHash, profileNodes)
+        const profileHash = await IdentityContract.methods.financialData().call()
+        const newHash = await ipfs.insertNodes(web3.utils.hexToAscii(profileHash), profileNodes)
         return IdentityContract.methods
-        .changeProfileData(web3.utils.asciiToHex(newHash))
+        .setFinancialData(web3.utils.asciiToHex(newHash))
         .send({
+            from: web3.eth.defaultAccount,
             gas: 150000,
             gasPrice: web3.utils.toWei(gasPrice, 'gwei')
         })
@@ -130,11 +133,12 @@ const insertProfileData = async (profileNodes, identityAddress, multiSig = false
 const updateProfileData = async (nodeLabel, data, identityAddress, multiSig = false) => {
     if(!multiSig) {
         IdentityContract.options.address = identityAddress
-        const profileHash = await IdentityContract.methods.financialData.call()
-        const newHash = await ipfs.updateNode(profileHash, nodeLabel, data)
+        const profileHash = await IdentityContract.methods.financialData().call()
+        const newHash = await ipfs.updateNode(web3.utils.hexToAscii(profileHash), nodeLabel, data)
         return IdentityContract.methods
-        .changeProfileData(web3.utils.asciiToHex(newHash))
+        .setFinancialData(web3.utils.asciiToHex(newHash))
         .send({
+            from: web3.eth.defaultAccount,
             gas: 150000,
             gasPrice: web3.utils.toWei(gasPrice, 'gwei')
         })
@@ -157,6 +161,10 @@ const addOwner = () => {}
   */
 const removeOwner = () => {}
 
+const hexToAscii = (bytes) => {
+    return web3.utils.hexToAscii(bytes)
+}
+
 
 module.exports = { 
     initAPI,
@@ -166,6 +174,7 @@ module.exports = {
     signTransaction,
     updateProfileData,
     insertProfileData,
+    hexToAscii,
     addOwner,
     removeOwner,
 }
