@@ -99,6 +99,12 @@ const signTransaction = (identityAddress, transactionId) => {
     })
 }
 
+const getProfileData = async (identityAddress, fetchData = false) => {
+    IdentityContract.options.address = identityAddress
+    const profileHash = await IdentityContract.methods.financialData().call()
+    const tree = await ipfs.dfs(web3.utils.hexToAscii(profileHash),'root',fetchData)
+    return tree           
+} 
 /**
   * Sets a new profile data
   *
@@ -165,13 +171,16 @@ const hexToAscii = (bytes) => {
     return web3.utils.hexToAscii(bytes)
 }
 
+const getWeb3 = () => { return web3 }
 
 module.exports = { 
     initAPI,
+    getWeb3,
     createPersonalIdentity,
     createMultiSigIdentity,
     sendTransaction,
     signTransaction,
+    getProfileData,
     updateProfileData,
     insertProfileData,
     hexToAscii,

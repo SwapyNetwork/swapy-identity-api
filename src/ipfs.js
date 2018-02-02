@@ -60,7 +60,9 @@ const fetchNodeData = async node => {
         for(let i = 0; i < node.childrens.length; i++){
             promises.push(fetchNodeData(node.childrens[i]))
         }
-        return Promise.all(promises)
+        return Promise.all(promises).then(data => {
+            return node
+        })
     }else if(node.hash){
         node.hash = await getData(node.hash)
     }
