@@ -35,8 +35,18 @@ const initAPI = (privateKey, ipfsHost, ipfsPort, ipfsProtocol, httpProvider, _ne
     ipfs.setProvider(ipfsHost, ipfsPort, ipfsProtocol)
 }
 
+/**
+  * Returns the internal web3.
+  *
+  * @return  {Object}  Web3 object                          
+  */
 const getWeb3 = () => { return web3 }
 
+/**
+  * Returns the protocol address.
+  *
+  * @return  {String}  IdentityProtocol contract's address                          
+  */
 const getProtocolAddress = () => { return IdentityProtocolContract.options.address }
 
 /**
@@ -75,7 +85,11 @@ const createMultiSigIdentity = async (owners, required, profileDataNodes = []) =
     })
 }
 
-
+/**
+  * Return all the identities created.
+  *
+  * @return  {Object[]}  An array with the past events                          
+  */
 const getIdentities = async () => {
     const logs = await IdentityProtocolContract.getPastEvents('IdentityCreated', { fromBlock: 0 })
     return logs
@@ -151,6 +165,13 @@ const executeTransaction = (identity, transactionId) => {
     })
 }
 
+/**
+  * Returns the profile data of an identity
+  *
+  * @param   {String}                 identity   identity's contract address 
+  * @param   {Boolean}                fetchData  retrieve leafs data or not 
+  * @return  {Promise<Object, Error>}            A promise that resolves with the transaction object or rejects with an error                          
+  */
 const getProfileData = async (identity, fetchData = false) => {
     IdentityContract.options.address = identity
     const profileHash = await IdentityContract.methods.financialData().call()
