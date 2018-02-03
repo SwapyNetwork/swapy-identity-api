@@ -4,7 +4,7 @@ const ipfs  = require('./ipfs')
 const networks = {
     'ropsten': { id: '0x3', protocol: '' },
     'rinkeby': { id: '0x4', protocol: '' },
-    'ganache': { id: '*', protocol: '0x39c890d125df3988e7415de761ea406889a0246d' },
+    'ganache': { id: '*', protocol: '0xf819835f5a773328a9a1821a28ed636d37ccef32' },
 }
 
 const DEFAULTNETWORK = 'ganache'
@@ -35,6 +35,10 @@ const initAPI = (privateKey, ipfsHost, ipfsPort, ipfsProtocol, httpProvider, _ne
     ipfs.setProvider(ipfsHost, ipfsPort, ipfsProtocol)
 }
 
+const addAccount = (privateKey) => {
+    const account =  web3.eth.accounts.privateKeyToAccount(privateKey)
+    web3.eth.accounts.wallet.add(account)
+}
 /**
   * Returns the internal web3.
   *
@@ -55,12 +59,13 @@ const getProtocolAddress = () => { return IdentityProtocolContract.options.addre
   * @param       {Object[]}                 profileDataNodes  Profile's tree nodes for insertion on IPFS
   * @return      {Promise<Object, Error>}                     A promise that resolves with the transaction object or rejects with an error                             
   */
-const createPersonalIdentity = async (profileDataNodes = []) => {
+const createPersonalIdentity = async (profileDataNodes = [], opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     const profileHash = await ipfs.initTree(profileDataNodes)
     return IdentityProtocolContract.methods
     .createPersonalIdentity(web3.utils.asciiToHex(profileHash))
     .send({
-        from: web3.eth.defaultAccount,
+        from,
         gas: 4500000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
@@ -74,12 +79,13 @@ const createPersonalIdentity = async (profileDataNodes = []) => {
   * @param   {Integer}                 required          the required number of signatures 
   * @return  {Promise<Object, Error>}                    A promise that resolves with the transaction object or rejects with an error                          
   */
-const createMultiSigIdentity = async (owners, required, profileDataNodes = []) => {
+const createMultiSigIdentity = async (owners, required, profileDataNodes = [], opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     const profileHash = await ipfs.initTree(profileDataNodes)
     return IdentityProtocolContract.methods
     .createMultiSigIdentity(web3.utils.asciiToHex(profileHash), owners, required)
     .send({
-        from: web3.eth.defaultAccount,
+        from,
         gas: 4500000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
@@ -125,13 +131,14 @@ const getIdentities = async () => {
   * @return  {Promise<Object, Error>}              A promise that resolves with the transaction object or rejects with an error                          
   */
 
-const forwardTransaction = async (identity, destination, value, funding, data, multiSig = false) => {
+const forwardTransaction = async (identity, destination, value, funding, data, multiSig = false, opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     if(!multiSig) {
         IdentityContract.options.address = identity
         return IdentityContract.methods
         .forward(destination, value, data)
         .send({
-            from: web3.eth.defaultAccount,
+            from,
             value: funding,
             gas: 4500000,
             gasPrice: web3.utils.toWei(gasPrice, 'gwei')
@@ -141,7 +148,7 @@ const forwardTransaction = async (identity, destination, value, funding, data, m
         return MultiSigIdentityContract.methods
         .addTransaction(destination, value, data)
         .send({
-            from: web3.eth.defaultAccount,
+            from,
             gas: 4500000,
             gasPrice: web3.utils.toWei(gasPrice, 'gwei')
         })
@@ -156,12 +163,13 @@ const forwardTransaction = async (identity, destination, value, funding, data, m
   * @param   {Integer}                transactionId    transaction's index 
   * @return  {Promise<Object, Error>}                  A promise that resolves with the transaction object or rejects with an error                          
   */
-const signTransaction = (identity, transactionId) => {
+const signTransaction = (identity, transactionId, opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     MultiSigIdentityContract.options.address = identity
     return MultiSigIdentityContract.methods
     .signTransaction(transactionId)
     .send({
-        from: web3.eth.defaultAccount,
+        from,
         gas: 150000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
@@ -174,12 +182,13 @@ const signTransaction = (identity, transactionId) => {
   * @param   {Integer}                transactionId    transaction's index 
   * @return  {Promise<Object, Error>}                  A promise that resolves with the transaction object or rejects with an error                          
   */
-const executeTransaction = (identity, transactionId) => {
+const executeTransaction = (identity, transactionId, opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     MultiSigIdentityContract.options.address = identity
     return MultiSigIdentityContract.methods
     .executeTransaction(transactionId)
     .send({
-        from: web3.eth.defaultAccount,
+        from,
         gas: 4500000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
@@ -206,7 +215,8 @@ const getProfileData = async (identity, fetchData = false) => {
   * @param   {Boolean}                multiSig          is a multi sig identity  
   * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
   */
-const insertProfileData = async (profileNodes, identity, multiSig = false) => {
+const insertProfileData = async (profileNodes, identity, multiSig = false, opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     if(!multiSig) {
         IdentityContract.options.address = identity
         const profileHash = await IdentityContract.methods.financialData().call()
@@ -214,7 +224,7 @@ const insertProfileData = async (profileNodes, identity, multiSig = false) => {
         return IdentityContract.methods
         .setFinancialData(web3.utils.asciiToHex(newHash))
         .send({
-            from: web3.eth.defaultAccount,
+            from,
             gas: 150000,
             gasPrice: web3.utils.toWei(gasPrice, 'gwei')
         })
@@ -226,7 +236,7 @@ const insertProfileData = async (profileNodes, identity, multiSig = false) => {
         return MultiSigIdentityContract.methods
         .addTransaction(identity, 0, txData)
         .send({
-            from: web3.eth.defaultAccount,
+            from,
             gas: 4500000,
             gasPrice: web3.utils.toWei(gasPrice, 'gwei')
         })
@@ -241,7 +251,8 @@ const insertProfileData = async (profileNodes, identity, multiSig = false) => {
   * @param   {Boolean}                multiSig          is a multi sig identity  
   * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
   */
-const updateProfileData = async (nodeLabel, data, identity, multiSig = false) => {
+const updateProfileData = async (nodeLabel, data, identity, multiSig = false, opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     if(!multiSig) {
         IdentityContract.options.address = identity
         const profileHash = await IdentityContract.methods.financialData().call()
@@ -249,7 +260,7 @@ const updateProfileData = async (nodeLabel, data, identity, multiSig = false) =>
         return IdentityContract.methods
         .setFinancialData(web3.utils.asciiToHex(newHash))
         .send({
-            from: web3.eth.defaultAccount,
+            from,
             gas: 150000,
             gasPrice: web3.utils.toWei(gasPrice, 'gwei')
         })
@@ -261,7 +272,7 @@ const updateProfileData = async (nodeLabel, data, identity, multiSig = false) =>
         return MultiSigIdentityContract.methods
         .addTransaction(identity, 0, txData)
         .send({
-            from: web3.eth.defaultAccount,
+            from,
             gas: 4500000,
             gasPrice: web3.utils.toWei(gasPrice, 'gwei')
         })
@@ -275,13 +286,14 @@ const updateProfileData = async (nodeLabel, data, identity, multiSig = false) =>
   * @param   {String}                 newOwner  Wallet address 
   * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
   */
-const addOwner = (identity, newOwner) => {
+const addOwner = (identity, newOwner, opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     MultiSigIdentityContract.options.address = identity
     const txData = MultiSigIdentityContract.methods.addOwner(newOwner).encodeABI()
     return MultiSigIdentityContract.methods
     .addTransaction(identity, 0, txData)
     .send({
-        from: web3.eth.defaultAccount,
+        from,
         gas: 4500000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
@@ -294,13 +306,34 @@ const addOwner = (identity, newOwner) => {
   * @param   {String}                 oldOwner  Wallet address 
   * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
   */
-const removeOwner = (identity, oldOwner) => {
+const removeOwner = (identity, oldOwner, opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
     MultiSigIdentityContract.options.address = identity
     const txData = MultiSigIdentityContract.methods.removeOwner(oldOwner).encodeABI()
     return MultiSigIdentityContract.methods
     .addTransaction(identity, 0, txData)
     .send({
-        from: web3.eth.defaultAccount,
+        from,
+        gas: 4500000,
+        gasPrice: web3.utils.toWei(gasPrice, 'gwei')
+    })
+}
+
+/**
+  * Changes the required number of signatures
+  *
+  * @param   {String}                 identity  Identity's contract address 
+  * @param   {String}                 required  new requirement 
+  * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
+  */
+  const changeRequired = (identity, required, opt = null) => {
+    const from = opt ? opt.from : web3.eth.defaultAccount
+    MultiSigIdentityContract.options.address = identity
+    const txData = MultiSigIdentityContract.methods.changeRequired(required).encodeABI()
+    return MultiSigIdentityContract.methods
+    .addTransaction(identity, 0, txData)
+    .send({
+        from,
         gas: 4500000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
@@ -310,6 +343,7 @@ const removeOwner = (identity, oldOwner) => {
 
 module.exports = { 
     initAPI,
+    addAccount,
     getWeb3,
     getProtocolAddress,
     getIdentities,
@@ -324,4 +358,5 @@ module.exports = {
     insertProfileData,
     addOwner,
     removeOwner,
+    changeRequired
 }
