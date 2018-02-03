@@ -57,6 +57,8 @@ const getProtocolAddress = () => { return IdentityProtocolContract.options.addre
   * Instantiates a new personal identity.
   *
   * @param       {Object[]}                 profileDataNodes  Profile's tree nodes for insertion on IPFS
+  * @param       {Object}                   opt               options
+  * @param       {String}                   opt.from          set the tx sender
   * @return      {Promise<Object, Error>}                     A promise that resolves with the transaction object or rejects with an error                             
   */
 const createPersonalIdentity = async (profileDataNodes = [], opt = null) => {
@@ -77,6 +79,8 @@ const createPersonalIdentity = async (profileDataNodes = [], opt = null) => {
   * @param   {String}                  profileDataNodes  the profile data location on IPFS
   * @param   {String[]}                owners            the profile data location on IPFS
   * @param   {Integer}                 required          the required number of signatures 
+  * @param   {Object}                  opt               options
+  * @param   {String}                  opt.from          set the tx sender
   * @return  {Promise<Object, Error>}                    A promise that resolves with the transaction object or rejects with an error                          
   */
 const createMultiSigIdentity = async (owners, required, profileDataNodes = [], opt = null) => {
@@ -128,6 +132,8 @@ const getIdentities = async () => {
   * @param   {Integer}                value        tx value
   * @param   {Integer}                funding      internal funding identity
   * @param   {String}                 data         tx data  
+  * @param   {Object}                 opt          options
+  * @param   {String}                 opt.from     set the tx sender
   * @return  {Promise<Object, Error>}              A promise that resolves with the transaction object or rejects with an error                          
   */
 
@@ -161,6 +167,8 @@ const forwardTransaction = async (identity, destination, value, funding, data, m
   *
   * @param   {String}                 identity         identity's contract address 
   * @param   {Integer}                transactionId    transaction's index 
+  * @param   {Object}                 opt              options
+  * @param   {String}                 opt.from         set the tx sender
   * @return  {Promise<Object, Error>}                  A promise that resolves with the transaction object or rejects with an error                          
   */
 const signTransaction = (identity, transactionId, opt = null) => {
@@ -180,6 +188,8 @@ const signTransaction = (identity, transactionId, opt = null) => {
   *
   * @param   {String}                 identity         identity's contract address 
   * @param   {Integer}                transactionId    transaction's index 
+  * @param   {Object}                 opt              options
+  * @param   {String}                 opt.from         set the tx sender
   * @return  {Promise<Object, Error>}                  A promise that resolves with the transaction object or rejects with an error                          
   */
 const executeTransaction = (identity, transactionId, opt = null) => {
@@ -213,6 +223,8 @@ const getProfileData = async (identity, fetchData = false) => {
   * @param   {Object[]}               profileNodes      Identity's tree nodes to be inserted 
   * @param   {String}                 identity          the identity's contract address
   * @param   {Boolean}                multiSig          is a multi sig identity  
+  * @param   {Object}                 opt               options
+  * @param   {String}                 opt.from          set the tx sender
   * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
   */
 const insertProfileData = async (profileNodes, identity, multiSig = false, opt = null) => {
@@ -249,6 +261,8 @@ const insertProfileData = async (profileNodes, identity, multiSig = false, opt =
   * @param   {Object}                 profileNodes      Identity's tree nodes to be inserted 
   * @param   {String}                 identity          the identity's contract address
   * @param   {Boolean}                multiSig          is a multi sig identity  
+  * @param   {Object}                 opt               options
+  * @param   {String}                 opt.from          set the tx sender
   * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
   */
 const updateProfileData = async (nodeLabel, data, identity, multiSig = false, opt = null) => {
@@ -284,6 +298,8 @@ const updateProfileData = async (nodeLabel, data, identity, multiSig = false, op
   *
   * @param   {String}                 identity  Identity's contract address 
   * @param   {String}                 newOwner  Wallet address 
+  * @param   {Object}                 opt       options
+  * @param   {String}                 opt.from  set the tx sender
   * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
   */
 const addOwner = (identity, newOwner, opt = null) => {
@@ -304,6 +320,8 @@ const addOwner = (identity, newOwner, opt = null) => {
   *
   * @param   {String}                 identity  Identity's contract address 
   * @param   {String}                 oldOwner  Wallet address 
+  * @param   {Object}                 opt       options
+  * @param   {String}                 opt.from  set the tx sender
   * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
   */
 const removeOwner = (identity, oldOwner, opt = null) => {
@@ -324,6 +342,8 @@ const removeOwner = (identity, oldOwner, opt = null) => {
   *
   * @param   {String}                 identity  Identity's contract address 
   * @param   {String}                 required  new requirement 
+  * @param   {Object}                 opt       options
+  * @param   {String}                 opt.from  set the tx sender
   * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
   */
   const changeRequired = (identity, required, opt = null) => {
@@ -338,8 +358,6 @@ const removeOwner = (identity, oldOwner, opt = null) => {
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
 }
-
-
 
 module.exports = { 
     initAPI,
