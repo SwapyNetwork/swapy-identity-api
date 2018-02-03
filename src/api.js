@@ -4,7 +4,7 @@ const ipfs  = require('./ipfs')
 const networks = {
     'ropsten': { id: '0x3', protocol: '' },
     'rinkeby': { id: '0x4', protocol: '' },
-    'ganache': { id: '*', protocol: '0x389b6c0fd02774c372914260355b97cf1207d0e8' },
+    'ganache': { id: '*', protocol: '0x39c890d125df3988e7415de761ea406889a0246d' },
 }
 
 const DEFAULTNETWORK = 'ganache'
@@ -94,6 +94,26 @@ const getIdentities = async () => {
     const logs = await IdentityProtocolContract.getPastEvents('IdentityCreated', { fromBlock: 0 })
     return logs
 }
+
+/**
+  * Return the identity transactions.
+  *
+  * @param   {String}    identity   the profile data location on IPFS
+  * @param   {Boolean}   multisig   multi sign transactions or not 
+  * @return  {Object[]}             An array with the past events                          
+  */
+  const getTransactions = async (identity, multiSig = false) => {
+    let logs
+    if(!multiSig){
+        IdentityContract.options.address = identity
+        logs = await IdentityContract.getPastEvents('Forwarded', { fromBlock: 0 })
+    }else{
+        MultiSigIdentityContract.options.address = identity
+        logs = await MultiSigIdentityContract.getPastEvents('TransactionCreated', { fromBlock: 0 })
+    }
+    return logs
+}
+
 /**
   * Creates a new transaction.
   *
@@ -160,7 +180,7 @@ const executeTransaction = (identity, transactionId) => {
     .executeTransaction(transactionId)
     .send({
         from: web3.eth.defaultAccount,
-        gas: 150000,
+        gas: 4500000,
         gasPrice: web3.utils.toWei(gasPrice, 'gwei')
     })
 }
@@ -293,10 +313,12 @@ module.exports = {
     getWeb3,
     getProtocolAddress,
     getIdentities,
+    getTransactions,
     createPersonalIdentity,
     createMultiSigIdentity,
     forwardTransaction,
     signTransaction,
+    executeTransaction,
     getProfileData,
     updateProfileData,
     insertProfileData,
