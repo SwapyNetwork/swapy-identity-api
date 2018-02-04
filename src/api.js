@@ -1,27 +1,38 @@
 const Web3  = require('web3')
 const ipfs  = require('./ipfs')
 
+
+let web3
+let network
+const gasPrice = "20"
+
+const DEFAULTNETWORK = 'ganache'
 const networks = {
     'ropsten': { id: '0x3', protocol: '' },
     'rinkeby': { id: '0x4', protocol: '' },
     'ganache': { id: '*', protocol: '0xf819835f5a773328a9a1821a28ed636d37ccef32' },
 }
 
-const DEFAULTNETWORK = 'ganache'
-
-let web3
-let network
-const gasPrice = "20"
 // contracts abi
 const IdentityProtocol = require('./contracts/IdentityProtocol.json')
 const Identity = require('./contracts/Identity.json')
 const MultiSigIdentity = require('./contracts/MultiSigIdentity.json')
+
 // web3 contracts
 let IdentityProtocolContract
 let IdentityContract
 let MultiSigIdentityContract
 
-
+/**
+  * Initializes web3, wallet, contracts and IPFS's connection.
+  *
+  * @param       {String}                   privateKey    default account's private key
+  * @param       {String}                   ipfsHost      ipfs host
+  * @param       {String}                   ipfsPort      ipfs connection port
+  * @param       {String}                   ipfsProtocol  ipfs protocotol https/http
+  * @param       {String}                   httpProvider  ethereum http provider
+  * @param       {String}                   _networkName  ethereum network name ropsten/rinkeby/ganache
+  */
 const initAPI = (privateKey, ipfsHost, ipfsPort, ipfsProtocol, httpProvider, _networkName = DEFAULTNETWORK)  => {
     web3 = new Web3(httpProvider) 
     network = networks[_networkName]
@@ -35,6 +46,11 @@ const initAPI = (privateKey, ipfsHost, ipfsPort, ipfsProtocol, httpProvider, _ne
     ipfs.setProvider(ipfsHost, ipfsPort, ipfsProtocol)
 }
 
+/**
+  * Adds a new account to the local wallet.
+  *
+  * @param   {String}                 privateKey   account's private key 
+  */
 const addAccount = (privateKey) => {
     const account =  web3.eth.accounts.privateKeyToAccount(privateKey)
     web3.eth.accounts.wallet.add(account)
@@ -77,7 +93,7 @@ const createPersonalIdentity = async (profileDataNodes = [], opt = null) => {
   * Instantiates a new multi signature identity.
   *
   * @param   {String}                  profileDataNodes  the profile data location on IPFS
-  * @param   {String[]}                owners            the profile data location on IPFS
+  * @param   {String[]}                owners            multi sig owners list
   * @param   {Integer}                 required          the required number of signatures 
   * @param   {Object}                  opt               options
   * @param   {String}                  opt.from          set the tx sender
@@ -136,7 +152,6 @@ const getIdentities = async () => {
   * @param   {String}                 opt.from     set the tx sender
   * @return  {Promise<Object, Error>}              A promise that resolves with the transaction object or rejects with an error                          
   */
-
 const forwardTransaction = async (identity, destination, value, funding, data, multiSig = false, opt = null) => {
     const from = opt ? opt.from : web3.eth.defaultAccount
     if(!multiSig) {
@@ -214,7 +229,7 @@ const executeTransaction = (identity, transactionId, opt = null) => {
 const getProfileData = async (identity, fetchData = false) => {
     IdentityContract.options.address = identity
     const profileHash = await IdentityContract.methods.financialData().call()
-    const tree = await ipfs.dfs(web3.utils.hexToAscii(profileHash),'root',fetchData)
+    const tree = await ipfs.searchNode(web3.utils.hexToAscii(profileHash),'root',fetchData)
     return tree           
 } 
 /**

@@ -1,11 +1,23 @@
 const sha3_256 = require('js-sha3').sha3_256;
 
-// init tree structure
+/**
+  * Initializes the tree structure with its root node
+  *
+  * @return  {Object}         tree's root node                           
+  */
 const initTree = () => { 
     return { label : 'root', hash : null }
 }
 
-// apply a depth-first search and insert a new node under the parentLabel
+/**
+  * Inserts a new node under a known parent node by applying a depth-first search
+  *
+  * @param   {Object}         node         tree's node with the target data
+  * @param   {String}         parentLabel  parent label
+  * @param   {String}         label        new node's label
+  * @param   {String}         hash         new node's data
+  * @return  {Object}                      the target node with the new node if the parent exists                                              
+  */
 const insertNode = (node, parentLabel, label, hash) => {
     if(node.label === parentLabel) {
         const newNode = { label, hash }
@@ -26,7 +38,13 @@ const insertNode = (node, parentLabel, label, hash) => {
     return null  
 }
 
-// apply a depth-first search and return the node with its childrens 
+/**
+  * Depth-first search
+  *
+  * @param   {Object}         node         tree's node that may contain the target node
+  * @param   {String}         search       target node's label
+  * @return  {Object}                      the desired node with its childrens if it exists                                              
+  */
 const dfs = (node, search) => {
     if(node.label === search) return node
     else if(node.childrens && node.childrens.length > 0) {
@@ -38,7 +56,13 @@ const dfs = (node, search) => {
     return null  
 }
 
-// apply a depth-first search, update the node and parent's hash  
+/**
+  * Updates a node by applying a depth-first search
+  *
+  * @param   {Object}         node         tree's node that may contain the target node
+  * @param   {String}         search       target node's label
+  * @return  {Object}                      the desired node with its childrens if it exists                                              
+  */
 const updateNode = (node, search, data) => {
     if(node.label === search && (!node.childrens || node.childrens.length === 0)) {
         node.hash = data;
@@ -53,7 +77,13 @@ const updateNode = (node, search, data) => {
     return null  
 }
 
-// apply a depth-first search, remove the node and update its parent's hash
+/**
+  * Removes a node by applying a depth-first search
+  *
+  * @param   {Object}         node         tree's node that may contain the target node
+  * @param   {String}         search       target node's label
+  * @return  {Object}                      node                                             
+  */
 const removeNode = (node, search) => {
     if(search === 'root') return false
     if(node.label === search) return node
@@ -69,8 +99,12 @@ const removeNode = (node, search) => {
     return null  
 }
 
-
-// renew node's hash following its childrens hashes
+/**
+  * Renews node's hash following its childrens hashes
+  *
+  * @param   {Object}         node         target node
+  * @return  {Object}                      updated node                                             
+  */
 const renewNodeHash = node => {
     if(node.childrens && node.childrens.length > 0)  { 
         let data = null;
