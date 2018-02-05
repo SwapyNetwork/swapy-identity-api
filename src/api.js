@@ -1,7 +1,6 @@
 const Web3  = require('web3')
-const ipfs  = require('./ipfs')
 
-
+let ipfs
 let web3
 let network
 const gasPrice = "20"
@@ -43,7 +42,7 @@ const initAPI = (privateKey, ipfsHost, ipfsPort, ipfsProtocol, httpProvider, _ne
     const account = web3.eth.accounts.privateKeyToAccount(privateKey)
     web3.eth.accounts.wallet.add(account)
     web3.eth.defaultAccount = account.address  
-    ipfs.setProvider(ipfsHost, ipfsPort, ipfsProtocol)
+    ipfs = new IdentityIpfs(ipfsHost, ipfsPort, ipfsProtocol)
 }
 
 /**
