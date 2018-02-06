@@ -1,5 +1,5 @@
-import * as  Web3 from 'web3'
-import { IpsIdentity } from './IpfsIdentity'
+import { IpfsService } from './IpfsService'
+import { Web3Service } from './Web3Service'
 
 const DEFAULTNETWORK = 'ganache'
 const networks = {
@@ -33,20 +33,15 @@ class Api {
         httpProvider,
         _networkName = DEFAULTNETWORK
     ) {
-        this.ipfs = new IpfsIdentity(ipfsHost, ipfsPort, ipfsProtocol)
-        this.web3 = new Web3(httpProvider) 
-        this.network = networks[_networkName]
-        this.IdentityContract = new this.web3.eth.Contract(Identity.abi)
-        this.MultiSigIdentityContract = new this.web3.eth.Contract(MultiSigIdentity.abi)
-        this.IdentityProtocolContract = new this.web3.eth.Contract(IdentityProtocol.abi)
-        this.IdentityProtocolContract.options.address = network.protocol
-        const account = this.web3.eth.accounts.privateKeyToAccount(privateKey)
-        this.web3.eth.accounts.wallet.add(account)
-        this.defaultOptions = {
-            from: account.address,
-            gas: 4500000,
-            gasPrice: this.web3.utils.toWei("20", 'gwei')
-        }
+        this.ipfsService = new IpfsService(ipfsHost, ipfsPort, ipfsProtocol)
+        this.web3Service = new Web3Service(httpProvider)
+        this.IdentityContract = this.web3Service.factoryContract(Identity.abi)
+        this.MultiSigIdentityContract = this.web3Service.factoryContract(MultiSigIdentity.abi)
+        this.IdentityProtocolContract = this.web3Service
+            .factoryContract(IdentityProtocol.abi, networks[_networkName].protocol)
+        this.addAccountFromPrivateKey(privateKey)
+        this.defaultOptions = this.web3Service.defaultOptions
+        this.utils = this.web3Service.utils
     }
 
    /**
@@ -54,9 +49,9 @@ class Api {
     *
     * @param   {String}                 privateKey   account's private key 
     */
-    addAccount(privateKey) {
-        const account =  this.web3.eth.accounts.privateKeyToAccount(privateKey)
-        this.web3.eth.accounts.wallet.add(account)
+    addAccountFromPrivateKey(privateKey) {
+        const account = this.web3Service.privateKeyToAccount(privateKey)
+        this.web3Service.addAccount(account)
     }
    /**
     * Returns the internal web3.
@@ -84,9 +79,9 @@ class Api {
         const from = opt ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        const profileHash = await this.ipfs.initTree(profileDataNodes)
+        const profileHash = await this.ipfsService.initTree(profileDataNodes)
         return this.IdentityProtocolContract.methods
-        .createPersonalIdentity(this.this.web3.utils.asciiToHex(profileHash))
+        .createPersonalIdentity(this.utils.asciiToHex(profileHash))
         .send({ from, gas, gasPrice })
     }
 
@@ -106,9 +101,9 @@ class Api {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        const profileHash = await this.ipfs.initTree(profileDataNodes)
+        const profileHash = await this.ipfsService.initTree(profileDataNodes)
         return this.IdentityProtocolContract.methods
-        .createMultiSigIdentity(this.web3.utils.asciiToHex(profileHash), owners, required)
+        .createMultiSigIdentity(this.utils.asciiToHex(profileHash), owners, required)
         .send({ from, gas, gasPrice })
     }
 
@@ -221,7 +216,7 @@ class Api {
     async getProfileData(identity, fetchData = false) {
         this.IdentityContract.options.address = identity
         const profileHash = await this.IdentityContract.methods.financialData().call()
-        const tree = await this.ipfs.searchNode(this.web3.utils.hexToAscii(profileHash),'root',fetchData)
+        const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash),'root',fetchData)
         return tree           
     } 
    /**
@@ -241,15 +236,15 @@ class Api {
         if(!multiSig) {
             this.IdentityContract.options.address = identity
             const profileHash = await this.IdentityContract.methods.financialData().call()
-            const newHash = await this.ipfs.insertNodes(this.web3.utils.hexToAscii(profileHash), profileNodes)
+            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes)
             return this.IdentityContract.methods
-            .setFinancialData(this.web3.utils.asciiToHex(newHash))
+            .setFinancialData(this.utils.asciiToHex(newHash))
             .send({ from, gas, gasPrice })
         }else{
             this.MultiSigIdentityContract.options.address = identity
             const profileHash = await this.MultiSigIdentityContract.methods.financialData().call()
-            const newHash = await this.ipfs.insertNodes(this.web3.utils.hexToAscii(profileHash), profileNodes)
-            const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.web3.utils.asciiToHex(newHash)).encodeABI()
+            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes)
+            const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(newHash)).encodeABI()
             return this.MultiSigIdentityContract.methods
             .addTransaction(identity, 0, txData)
             .send({ from, gas, gasPrice })
@@ -273,15 +268,15 @@ class Api {
         if(!multiSig) {
             this.IdentityContract.options.address = identity
             const profileHash = await this.IdentityContract.methods.financialData().call()
-            const newHash = await this.ipfs.updateNode(this.web3.utils.hexToAscii(profileHash), nodeLabel, data)
+            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data)
             return this.IdentityContract.methods
-            .setFinancialData(this.web3.utils.asciiToHex(newHash))
+            .setFinancialData(this.utils.asciiToHex(newHash))
             .send({ from, gas, gasPrice })
         }else{
             this.MultiSigIdentityContract.options.address = identity
             const profileHash = await this.MultiSigIdentityContract.methods.financialData().call()
-            const newHash = await this.ipfs.updateNode(this.web3.utils.hexToAscii(profileHash), nodeLabel, data)
-            const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.web3.utils.asciiToHex(newHash)).encodeABI()
+            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data)
+            const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(newHash)).encodeABI()
             return this.MultiSigIdentityContract.methods
             .addTransaction(identity, 0, txData)
             .send({ from, gas, gasPrice })

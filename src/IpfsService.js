@@ -1,7 +1,7 @@
 import { IdentityDag } from './IdentityDag'
 import * as ipfsAPI from 'ipfs-api'
 
-class IpfsIdentity {
+class IpfsService {
    
    /**
     * Sets the IPFS's node provider
@@ -216,3 +216,5 @@ const fetchNodeData = async node => {
     }
     return node
 }
+
+export default IpfsService
