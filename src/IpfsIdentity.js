@@ -63,7 +63,7 @@ class IpfsIdentity {
     saveData(stringData) {
         const data = Buffer.from(stringData)
         return new Promise((resolve, reject) => {
-            ipfs.files.add(data, (err, cid) => {
+            this.ipfs.files.add(data, (err, cid) => {
                 if(err) reject(err)
                 else resolve(cid[0].path)
             })
@@ -78,7 +78,7 @@ class IpfsIdentity {
     */
     getData(ipfsHash) {
         return new Promise((resolve, reject) => {
-            ipfs.files.get(`/ipfs/${ipfsHash}`, (err, data) => {
+            this.ipfs.files.get(`/ipfs/${ipfsHash}`, (err, data) => {
                 if(err) reject(err)
                 else resolve(data[0].content.toString())
             })
@@ -94,7 +94,7 @@ class IpfsIdentity {
     * @return  {Object}               the desired node with its childrens if it exists                                              
     */
     async searchNode(ipfsHash, search, fetchData = false) {
-        const tree = await getTree(ipfsHash)
+        const tree = await this.getTree(ipfsHash)
         let result = IdentityDag.dfs(tree, search)
         if(result && fetchData) {
             result = await fetchNodeData(result)
@@ -113,7 +113,7 @@ class IpfsIdentity {
     * @returns {String}                            The location of the saved tree on IPFS
     */
     async insertNodes(ipfsHash, insertions) {
-        let tree = await getTree(ipfsHash)
+        let tree = await this.getTree(ipfsHash)
         const result = await handleInsertions(tree, insertions)    
         const treeHash = await saveTree(tree)
         return treeHash
@@ -129,8 +129,8 @@ class IpfsIdentity {
     * @returns {String}                            The location of the saved tree on IPFS
     */
     async updateNode(ipfsHash, search, data) {
-        const dataIpfsHash = await saveData(data)
-        const tree = await getTree(ipfsHash)
+        const dataIpfsHash = await this.saveData(data)
+        const tree = await this.getTree(ipfsHash)
         IdentityDag.updateNode(tree, search, dataIpfsHash)
         return await saveTree(tree)
     }
@@ -143,7 +143,7 @@ class IpfsIdentity {
     * @returns {String}                            The location of the saved tree on IPFS
     */
     async removeNode(ipfsHash, search) {
-        const tree = await getTree(ipfsHash)
+        const tree = await this.getTree(ipfsHash)
         IdentityDag.removeNode(tree, search)
         return await saveTree(tree)
     }
@@ -189,7 +189,7 @@ const handleInsertion = async (node, insertion, parentLabel) => {
         }  
         childrens = null            
     }
-    if(data) data = await saveData(data)
+    if(data) data = await this.saveData(data)
     IdentityDag.insertNode(node, parentLabel, insertion.label, data)
     if(insertion.childrens && insertion.childrens.length > 0)
         return await handleInsertions(node, insertion.childrens, insertion.label)
@@ -212,7 +212,7 @@ const fetchNodeData = async node => {
             return node
         })
     }else if(node.hash){
-        node.hash = await getData(node.hash)
+        node.hash = await IpsIdentity.getData(node.hash)
     }
     return node
 }
