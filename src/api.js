@@ -1,5 +1,8 @@
+import * as Moment from 'moment'
+import { sha3_256 } from 'js-sha3'
 import { IpfsService } from './IpfsService'
 import { Web3Service } from './Web3Service'
+
 
 const DEFAULTNETWORK = 'ganache'
 const networks = {
@@ -54,7 +57,7 @@ class Api {
         this.web3Service.addAccount(account)
     }
    /**
-    * Returns the internal web3.
+    * Gets web3 instance.
     *
     * @return  {Object}  Web3 object                          
     */
@@ -116,9 +119,86 @@ class Api {
         const logs = await this.IdentityProtocolContract.getPastEvents('IdentityCreated', { fromBlock: 0 })
         return logs
     }
+    
+    /**
+     * Creates a random seed
+     * @returns     Random hash     
+     */
+    getSeed() {
+        const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
+        return sha3_256(randomSeed)
+    }
+    
+    /**
+     * Creates a pooling for the Identity attestation  
+     * 
+     * @param   {String}     identity    Identity's address
+     * @param   {String}     seed        auth seed
+     * @param   {String}     expDate     credential's expiration timestamp
+     * @param   {Boolean}    authorized  Identity's attestation 
+     */
+    async authPooling(identity, seed, expDate, authorized) {
+        const watcher = setTimeout(() => {
+            authorized = await this.isAuthorized(identity, seed, expDate)
+            if(!authorized) watchCredentials(identity, seed, expDate, authorized)
+        },2000)
+    }
+
+    /**
+     * Watch for Identity's credential attestation
+     * 
+     * @param   {String}     identity    Identity's address
+     * @param   {String}     seed        auth seed
+     * @param   {String}     expDate     credential's expiration timestamp 
+     * @param   {Boolean}    authorized  Identity's attestation 
+     */
+    async watchCredentials(identity, seed, expDate, authorized = false){
+        if(!authorized) authPooling(identity, seed, expDate, authorized)
+        return authorized
+    }
+    /**
+     * Attests Identity's credentials
+     *
+     * @param   {String}     identity    Identity's address
+     * @param   {String}     seed        auth seed
+     * @param   {String}     expDate     credential's expiration timestamp 
+     * 
+     */ 
+    async isAuthorized(identity, seed, expDate) {
+        const credential = JSON.stringify({
+            identityHash: sha3_256(identity),
+            seed, 
+            expDate 
+        })
+        const authorized = await ipfsService.attestCredential(credential)
+        return authorized        
+    }
+
+    /**
+     * Sets Identity's credentials
+     * 
+     * @param   {String}  identity
+     * @param   {String}  seed
+     * @param   {String}  expTimestamp
+     *      
+     */
+    async setCredentials(){
+        const exp = moment.unix(expTimestamp)
+        const now = moment.unix().valueOf()
+        if(now.isBefore(exp)){
+            const credential = JSON.stringify({
+                identityHash: sha3_256(identity),
+                seed,
+                expDate
+            })
+            return await ipfsService.setCredentials(credential)
+        }else{
+            throw false
+        }
+    }
 
    /**
-    * Return the identity transactions.
+    * Returns Identity's transactions.
     *
     * @param   {String}    identity   the profile data location on IPFS
     * @param   {Boolean}   multisig   multi sign transactions or not 
