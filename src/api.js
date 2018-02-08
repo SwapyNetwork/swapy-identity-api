@@ -140,7 +140,7 @@ class Api {
     async authPooling(identity, seed, expDate, authorized) {
         const watcher = setTimeout(() => {
             authorized = await this.isAuthorized(identity, seed, expDate)
-            if(!authorized) watchCredentials(identity, seed, expDate, authorized)
+            if(!authorized) await watchCredentials(identity, seed, expDate, authorized)
         },2000)
     }
 
@@ -165,12 +165,12 @@ class Api {
      * 
      */ 
     async isAuthorized(identity, seed, expDate) {
-        const credential = JSON.stringify({
+        const credentials = {
             identityHash: sha3_256(identity),
             seed, 
             expDate 
-        })
-        const authorized = await ipfsService.attestCredential(credential)
+        }
+        const authorized = await ipfsService.attestCredentials(credentials)
         return authorized        
     }
 
@@ -186,12 +186,12 @@ class Api {
         const exp = moment.unix(expTimestamp)
         const now = moment.unix().valueOf()
         if(now.isBefore(exp)){
-            const credential = JSON.stringify({
+            const credentials = {
                 identityHash: sha3_256(identity),
                 seed,
                 expDate
-            })
-            return await ipfsService.setCredentials(credential)
+            }
+            return await ipfsService.saveObject(credentials)
         }else{
             throw false
         }
@@ -402,7 +402,7 @@ class Api {
         .addTransaction(identity, 0, txData)
         .send({ from, gas, gasPrice })
     }
-
+    
    /**
     * Changes the required number of signatures
     *

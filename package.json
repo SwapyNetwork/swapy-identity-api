@@ -10,6 +10,7 @@
     "ipfs-api": "^17.3.0",
     "js-sha3": "^0.7.0",
     "moment": "^2.20.1",
+    "multihashes": "^0.4.13",
     "qr-image": "^3.2.0",
     "web3": "^1.0.0-beta.29"
   },
@@ -22,5 +23,11 @@
   "bugs": {
     "url": "https://github.com/SwapyNetwork/swapy-identity-api/issues"
   },
-  "homepage": "https://github.com/SwapyNetwork/swapy-identity-api#readme"
+  "homepage": "https://github.com/SwapyNetwork/swapy-identity-api#readme",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.24.1",
+    "babel-cli": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-register": "^6.26.0"
+  }
 }

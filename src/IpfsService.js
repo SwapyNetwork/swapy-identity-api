@@ -1,3 +1,4 @@
+import * as multihashes from 'multihashes'
 import { IdentityDag } from './IdentityDag'
 import * as ipfsAPI from 'ipfs-api'
 
@@ -28,30 +29,30 @@ class IpfsService {
         if(insertions) {
             const result = await handleInsertions(tree, insertions)    
         }
-        const ipfsHash = await saveTree(tree)
+        const ipfsHash = await saveObject(tree)
         return ipfsHash
     }
 
    /**
-    * Persists a tree object on IPFS 
+    * Persists an object on IPFS 
     *
-    * @param   {Object}       jsonData   tree object       
-    * @returns {String}                  The location of the saved tree on IPFS
+    * @param   {Object}       jsonData   object       
+    * @returns {String}                  Index on IPFS
     */
-    saveTree(jsonData) {
+    saveObject(jsonData) {
         const stringData = JSON.stringify(jsonData)
         return saveData(stringData)
     }
 
    /**
-    * Gets a tree persisted on IPFS 
+    * Gets a object persisted on IPFS 
     *
     * @param   {String}       ipfsHash   The ipfs location       
-    * @returns {Object}                  Tree object
+    * @returns {Object}                  Object stored on IPFS
     */
-    async getTree(ipfsHash) {
-        const stringTree = await getData(ipfsHash)
-        return JSON.parse(stringTree)
+    async getObject(ipfsHash) {
+        const stringData = await getData(ipfsHash)
+        return JSON.parse(stringData)
     }
 
    /**
@@ -85,6 +86,12 @@ class IpfsService {
         })
     }
 
+    async attestCredentials(credentials) {
+        const data = Buffer.from(JSON.stringify(credentials))
+        //@todo check if the multihash of data exists on IPFS
+        return false
+    }
+
    /**
     * Search a node within the IPFS tree
     *
@@ -94,7 +101,7 @@ class IpfsService {
     * @return  {Object}               the desired node with its childrens if it exists                                              
     */
     async searchNode(ipfsHash, search, fetchData = false) {
-        const tree = await this.getTree(ipfsHash)
+        const tree = await this.getObject(ipfsHash)
         let result = IdentityDag.dfs(tree, search)
         if(result && fetchData) {
             result = await fetchNodeData(result)
@@ -113,9 +120,9 @@ class IpfsService {
     * @returns {String}                            The location of the saved tree on IPFS
     */
     async insertNodes(ipfsHash, insertions) {
-        let tree = await this.getTree(ipfsHash)
+        let tree = await this.getObject(ipfsHash)
         const result = await handleInsertions(tree, insertions)    
-        const treeHash = await saveTree(tree)
+        const treeHash = await saveObject(tree)
         return treeHash
     }
 
@@ -130,9 +137,9 @@ class IpfsService {
     */
     async updateNode(ipfsHash, search, data) {
         const dataIpfsHash = await this.saveData(data)
-        const tree = await this.getTree(ipfsHash)
+        const tree = await this.getObject(ipfsHash)
         IdentityDag.updateNode(tree, search, dataIpfsHash)
-        return await saveTree(tree)
+        return await saveObject(tree)
     }
 
    /**
@@ -143,9 +150,9 @@ class IpfsService {
     * @returns {String}                            The location of the saved tree on IPFS
     */
     async removeNode(ipfsHash, search) {
-        const tree = await this.getTree(ipfsHash)
+        const tree = await this.getObject(ipfsHash)
         IdentityDag.removeNode(tree, search)
-        return await saveTree(tree)
+        return await saveObject(tree)
     }
 }
 
