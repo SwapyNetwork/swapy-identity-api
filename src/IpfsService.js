@@ -1,5 +1,5 @@
-import * as multihashes from 'multihashes'
 import { IdentityDag } from './IdentityDag'
+import { MultiHash } from './utils/MultiHash'
 import * as ipfsAPI from 'ipfs-api'
 
 class IpfsService {
@@ -86,9 +86,19 @@ class IpfsService {
         })
     }
 
+    /**
+     * Search user's credentials on IPFS 
+     *
+     * @param   {Object}   credentials               user's credentials
+     * @param   {String}   credentials.identityHash  target node's label
+     * @param   {Boolean}  fetchData    retrieve node's data value or its location
+     * @return  {Object}                the desired node with its childrens if it exists                                              
+     */
+
     async attestCredentials(credentials) {
-        const data = Buffer.from(JSON.stringify(credentials))
-        //@todo check if the multihash of data exists on IPFS
+        const buffer = Buffer.from(JSON.stringify(credentials))
+        const offlineMultiHash = MultiHash.getMultiHash(buffer)
+        const attested = await this.getData(offlineMultiHash)
         return false
     }
 

@@ -182,14 +182,14 @@ class Api {
      * @param   {String}  expTimestamp
      *      
      */
-    async setCredentials(){
+    async setCredentials(identity, seed, expTimestamp) {
         const exp = moment.unix(expTimestamp)
         const now = moment.unix().valueOf()
         if(now.isBefore(exp)){
             const credentials = {
                 identityHash: sha3_256(identity),
                 seed,
-                expDate
+                expTimestamp
             }
             return await ipfsService.saveObject(credentials)
         }else{
