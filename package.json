@@ -1,12 +1,13 @@
 {
-  "name": "swapy-identity-api",
-  "version": "1.0.0",
-  "description": "javascript api to manage Swapy Identities ",
-  "main": "index.js",
+  "name": "@swapynetwork/swapy-identity-api",
+  "version": "0.0.1",
+  "description": "",
+  "main": "lib/bundle.js",
   "scripts": {
     "serve": "webpack-dev-server",
     "build": "webpack",
-    "build-babel": "babel src -d scripts --watch"
+    "build-babel": "babel src -d scripts --watch",
+    "prepublishOnly": "webpack"
   },
   "dependencies": {
     "bs58": "^4.0.1",
@@ -28,7 +29,7 @@
     "type": "git",
     "url": "git+https://github.com/SwapyNetwork/swapy-identity-api.git"
   },
-  "author": "",
+  "author": "Luis Philipe Fidelis <luis@swapy.network> (https://www.swapy.network/)",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/SwapyNetwork/swapy-identity-api/issues"
