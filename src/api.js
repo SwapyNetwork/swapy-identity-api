@@ -138,7 +138,7 @@ class Api {
      * @param   {Boolean}    authorized  Identity's attestation 
      */
     async authPooling(identity, seed, expDate, authorized) {
-        const watcher = setTimeout(() => {
+        const watcher = setTimeout( async () => {
             authorized = await this.isAuthorized(identity, seed, expDate)
             if(!authorized) await watchCredentials(identity, seed, expDate, authorized)
         },2000)

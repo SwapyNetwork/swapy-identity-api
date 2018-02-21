@@ -9,7 +9,7 @@ class MultiHash {
      *  @param    {Object}     buffer  Buffered content
      *  @return   {String}             sha256 multi-hash generated
      */
-    static getMultiHash = (buffer) => {
+    static getMultiHash(buffer) {
         const unixFs = new Unixfs("file", buffer)
         const dagNode = new DAGNode(unixFs.marshal(), []).toJSON()
         return dagNode.Hash
