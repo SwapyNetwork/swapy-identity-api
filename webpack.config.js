@@ -1,20 +1,29 @@
 const path = require('path');
 const webpack = require('webpack');
+
 module.exports = {
-	entry: './src/index.js',
+    entry: [
+        'webpack-dev-server/client?http://localhost:3000',
+        'webpack/hot/only-dev-server',
+        './src/index'
+    ],
 	output: {
-    path: path.join(__dirname, 'lib'),
-    filename: 'bundle.js'   
+        path: path.join(__dirname, 'lib'),
+        filename: 'bundle.min.js',
+        libraryTarget: 'umd',
+        library: '@swapynetwork/swapy-identity-api'
 	},
     module: {
         rules: [{
             test: /\.js$/,
             exclude: /(node_modules)/,
-            loader: 'babel-loader'
+            loader: 'babel-loader',
+            query: {
+                presets: ['es2015']
+            }
         }]
     },
     node: {
-        console: false,
         fs: 'empty',
         net: 'empty',
         tls: 'empty'
@@ -40,5 +49,6 @@ module.exports = {
               'NODE_ENV': JSON.stringify('production')
             }
         }),
+        new webpack.HotModuleReplacementPlugin()
     ]
 };

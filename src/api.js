@@ -2,19 +2,21 @@ import * as Moment from 'moment'
 import { sha3_256 } from 'js-sha3'
 import { IpfsService } from './IpfsService'
 import { Web3Service } from './Web3Service'
+import { QRCode } from './utils/QRCode' 
 
 
 const DEFAULTNETWORK = 'ganache'
 const networks = {
-    'ropsten': { id: '0x3', protocol: '' },
-    'rinkeby': { id: '0x4', protocol: '' },
-    'ganache': { id: '*', protocol: '0xf819835f5a773328a9a1821a28ed636d37ccef32' },
+    'ropsten': { id: '0x3', protocol: '', token: '' },
+    'rinkeby': { id: '0x4', protocol: '', token: '' },
+    'ganache': { id: '*', protocol: '0xf819835f5a773328a9a1821a28ed636d37ccef32', token: '' },
 }
 
 // contracts abi
 const IdentityProtocol = require('./contracts/abi/IdentityProtocol.json')
 const Identity = require('./contracts/abi/Identity.json')
 const MultiSigIdentity = require('./contracts/abi/MultiSigIdentity.json')
+const Token = require('./contracts/abi/Token.json')
 
 class Api {
 
@@ -42,6 +44,7 @@ class Api {
         this.MultiSigIdentityContract = this.web3Service.factoryContract(MultiSigIdentity.abi)
         this.IdentityProtocolContract = this.web3Service
             .factoryContract(IdentityProtocol.abi, networks[_networkName].protocol)
+        this.TokenContract = this.web3Service.factoryContract(Token.abi, networks[_networkName].token)
         this.addAccountFromPrivateKey(privateKey)
         this.defaultOptions = this.web3Service.defaultOptions
         this.utils = this.web3Service.utils
@@ -121,13 +124,15 @@ class Api {
     }
     
     /**
-     * Creates a random seed
+     * Creates a random seed and hash it
      * @returns     Random hash     
      */
     getSeed() {
         const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
         return sha3_256(randomSeed)
     }
+
+
     
     /**
      * Creates a pooling for the Identity attestation  
@@ -246,6 +251,51 @@ class Api {
             .send({ from, gas, gasPrice })
         }
 
+    }
+
+    /**
+    * Creates a sell transaction for identity's data 
+    *
+    * @param   {String}      identity         identity's contract address 
+    * @param   {Object[]}    saleNodes        List of nodes to be selled 
+    * @param   {String}      saleNodes.label  Node label
+    * @param   {Integer}     saleNodes.price  Node price
+    * @param   {Integer}     price            Sale total price. Overrided by node's prices if it's null
+    * @return  {String}                       QRcode image uri                          
+    */
+    sellIdentityData(identity, saleNodes, price = 0) {
+        if(!price){
+            saleNodes.forEach((node) => {
+                price += parseInt(node.price)  
+            })
+        }
+        const sellObject = { identity, saleNodes, price }
+        return QRCode.getQRUri(JSON.stringify(sellObject))
+    }
+
+    /**
+    * Transfer tokens and retrieve identity's data after that 
+    *
+    * @param   {String}      identity         identity's contract address 
+    * @param   {Object[]}    saleNodes        List of nodes to be selled 
+    * @param   {String}      saleNodes.label  Node label
+    * @param   {Integer}     price            Sale price. 
+    * @return  {String}                       QRcode image uri                          
+    */
+    async buyIdentityData(identity, seller, saleNodes, price, opt = {
+        from: null, gas: null, gasPrice: null 
+    }) {
+        
+        const from = opt ? opt.from : this.defaultOptions.from
+        const gas = opt.gas ? opt.gas : this.defaultOptions.gas
+        const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
+
+        this.IdentityContract.options.address = identity
+        await this.IdentityContract.methods
+            .transferTokens(seller, price)
+            .send({ from, gas, gasPrice })
+        const sellerTree = await this.getProfileData(seller, true)
+        return sellerTree
     }
 
    /**

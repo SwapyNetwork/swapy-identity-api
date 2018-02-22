@@ -2,7 +2,7 @@
   "name": "@swapynetwork/swapy-identity-api",
   "version": "0.0.1",
   "description": "",
-  "main": "lib/bundle.js",
+  "main": "lib/bundle.min.js",
   "scripts": {
     "serve": "webpack-dev-server",
     "build": "webpack",
@@ -22,8 +22,7 @@
     "multihashing": "^0.3.2",
     "qr-image": "^3.2.0",
     "ultralightbeam": "^5.0.0",
-    "web3": "^1.0.0-beta.29",
-    "webpack": "^3.10.0"
+    "web3": "^1.0.0-beta.29"
   },
   "repository": {
     "type": "git",
@@ -41,6 +40,7 @@
     "babel-polyfill": "^6.26.0",
     "babel-register": "^6.26.0",
     "babel-loader": "^7.1.2",
-    "webpack-dev-server": "^2.11.1"
+    "webpack-dev-server": "^2.11.1",
+    "webpack": "^3.11.0"
   }
 }
