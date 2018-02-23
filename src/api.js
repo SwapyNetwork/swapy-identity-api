@@ -1,8 +1,10 @@
 import * as Moment from 'moment'
 import { sha3_256 } from 'js-sha3'
 import { IpfsService } from './IpfsService'
+import { IdentityDag } from './IdentityDag'
 import { Web3Service } from './Web3Service'
-import { QRCode } from './utils/QRCode' 
+import { QRCode } from './utils/QRCode'
+
 
 
 const DEFAULTNETWORK = 'ganache'
@@ -131,7 +133,6 @@ class Api {
         const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
         return sha3_256(randomSeed)
     }
-
 
     
     /**
@@ -265,7 +266,7 @@ class Api {
     */
     sellIdentityData(identity, saleNodes, price = 0) {
         if(!price){
-            saleNodes.forEach((node) => {
+            saleNodes.forEach( node => {
                 price += parseInt(node.price)  
             })
         }
@@ -274,7 +275,7 @@ class Api {
     }
 
     /**
-    * Transfer tokens and retrieve identity's data after that 
+    * Transfer tokens and retrieve the data bought
     *
     * @param   {String}      identity         identity's contract address 
     * @param   {Object[]}    saleNodes        List of nodes to be selled 
@@ -289,13 +290,15 @@ class Api {
         const from = opt ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-
-        this.IdentityContract.options.address = identity
-        await this.IdentityContract.methods
-            .transferTokens(seller, price)
-            .send({ from, gas, gasPrice })
+        
+        const txData = this.TokenContract.methods.transfer(seller, price).encodeABI()
+        await this.forwardTransaction(identity, this.TokenContract.options.address, 0, 0, txData)
         const sellerTree = await this.getProfileData(seller, true)
-        return sellerTree
+        const dataBought = {}
+        saleNodes.forEach( node  => {   
+             dataBought[node.label] = IdentityDag.dfs(sellerTree, node.label)
+        })        
+        return dataBought
     }
 
    /**

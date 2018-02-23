@@ -97,7 +97,7 @@ class IpfsService {
 
     async attestCredentials(credentials) {
         const buffer = Buffer.from(JSON.stringify(credentials))
-        const offlineMultiHash = MultiHash.getMultiHash(buffer)
+        const offlineMultiHash = await MultiHash.getMultiHash(buffer)
         const attested = await this.getData(offlineMultiHash)
         return false
     }
@@ -153,7 +153,7 @@ class IpfsService {
     }
 
    /**
-    * Removes a node from the IPFS tree 
+    * Removes a node within the IPFS tree 
     *
     * @param   {String}     ipfsHash               ipfs tree location    
     * @param   {String}     search                 target node   
