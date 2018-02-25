@@ -1,2 +1,4 @@
-import Api from './api'
-export { Api }
+'use strict';
+const Api = require('./api').Api
+exports.default = Api
+    
