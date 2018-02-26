@@ -1,26 +1,20 @@
-'use strict';
+'use strict'
 
 // Webpack
 const webpack = require('webpack')
-
-// Plugin Setup
-const globalsPlugin = new webpack.DefinePlugin({
-  __DEV__: JSON.stringify(JSON.parse(process.env.BUILD_DEV || 'true')),
-  'process.env': { 'NODE_ENV': JSON.stringify('development') }
-})
 
 let libraryName = 'api'
 
 // Final Config
 module.exports = {
   entry: {'api': './src/index.js'},
+  devtool: 'source-map',
   output: {
-    filename: 'dist/[name].js',
+    filename: 'dist/[name].min.js',
     library: libraryName,
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
-  devtool: 'source-map',
   module: {
     rules: [
       {
@@ -45,6 +39,15 @@ module.exports = {
     extensions: ['.js', '.json']
   },
   plugins: [
-    globalsPlugin
+    new webpack.LoaderOptionsPlugin({
+      minimize: true,
+      debug: false
+    }),
+    new webpack.optimize.UglifyJsPlugin({
+      sourceMap: true
+    }),
+    new webpack.DefinePlugin({
+      'process.env': { NODE_ENV: JSON.stringify('production') }
+    })
   ]
 }

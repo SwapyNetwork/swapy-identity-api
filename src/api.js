@@ -5,8 +5,6 @@ import { IdentityDag } from './IdentityDag'
 import { Web3Service } from './Web3Service'
 import { QRCode } from './utils/QRCode'
 
-
-
 const DEFAULTNETWORK = 'ganache'
 const networks = {
     'ropsten': { id: '0x3', protocol: '', token: '' },
@@ -42,12 +40,12 @@ class Api {
     ) {
         this.ipfsService = new IpfsService(ipfsHost, ipfsPort, ipfsProtocol)
         this.web3Service = new Web3Service(httpProvider)
+        this.addAccountFromPrivateKey(privateKey)
         this.IdentityContract = this.web3Service.factoryContract(Identity.abi)
         this.MultiSigIdentityContract = this.web3Service.factoryContract(MultiSigIdentity.abi)
         this.IdentityProtocolContract = this.web3Service
             .factoryContract(IdentityProtocol.abi, networks[_networkName].protocol)
         this.TokenContract = this.web3Service.factoryContract(Token.abi, networks[_networkName].token)
-        this.addAccountFromPrivateKey(privateKey)
         this.defaultOptions = this.web3Service.defaultOptions
         this.utils = this.web3Service.utils
     }
@@ -84,7 +82,7 @@ class Api {
     * @return      {Promise<Object, Error>}                     A promise that resolves with the transaction object or rejects with an error                             
     */
     async createPersonalIdentity(profileDataNodes = [], opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         const profileHash = await this.ipfsService.initTree(profileDataNodes)
@@ -237,7 +235,7 @@ class Api {
     async forwardTransaction(identity, destination, value, funding, data, multiSig = false, opt = {
         from: null, gas: null, gasPrice: null 
     }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         if(!multiSig) {
@@ -287,7 +285,7 @@ class Api {
         from: null, gas: null, gasPrice: null 
     }) {
         
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         
@@ -311,7 +309,7 @@ class Api {
     * @return  {Promise<Object, Error>}                  A promise that resolves with the transaction object or rejects with an error                          
     */
     signTransaction (identity, transactionId, opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         this.MultiSigIdentityContract.options.address = identity
@@ -330,7 +328,7 @@ class Api {
     * @return  {Promise<Object, Error>}                  A promise that resolves with the transaction object or rejects with an error                          
     */
     executeTransaction(identity, transactionId, opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         this.MultiSigIdentityContract.options.address = identity
@@ -363,7 +361,7 @@ class Api {
     * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
     */
     async insertProfileData(profileNodes, identity, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         if(!multiSig) {
@@ -395,7 +393,7 @@ class Api {
     * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
     */
     async updateProfileData(nodeLabel, data, identity, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         if(!multiSig) {
@@ -426,7 +424,7 @@ class Api {
     * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
     */
     addOwner(identity, newOwner, opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         this.MultiSigIdentityContract.options.address = identity
@@ -446,7 +444,7 @@ class Api {
     * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
     */
     removeOwner(identity, oldOwner, opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         const txData = MultiSigIdentityContract.methods.removeOwner(oldOwner).encodeABI()
@@ -466,7 +464,7 @@ class Api {
     * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
     */
     changeRequired(identity, required, opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt ? opt.from : this.defaultOptions.from
+        const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         this.MultiSigIdentityContract.options.address = identity

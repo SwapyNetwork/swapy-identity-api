@@ -14,4 +14,4 @@ class QRCode {
     }
 }
 
-export default QRCode
+export { QRCode }

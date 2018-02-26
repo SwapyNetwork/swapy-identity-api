@@ -122,4 +122,4 @@ const renewNodeHash = node => {
     return node
 }
 
-export default IdentityDag
+export { IdentityDag }

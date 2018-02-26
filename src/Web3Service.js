@@ -1,4 +1,4 @@
-import * as  Web3 from 'web3'
+import { default as Web3 } from 'web3'
 
 class Web3Service {
   
@@ -6,12 +6,13 @@ class Web3Service {
     * Instantiates web3  
     *
     * @param    {String}  httpProvider   Ethereum's http provider
-    */
+    * @param    {String}  privateKey     default account's private key
+    **/
     constructor(httpProvider){
         this.web3 = new Web3(httpProvider) 
         this.utils =  this.web3.utils
         this.defaultOptions = {
-            from: account.address,
+            from: null,
             gas: 4500000,
             gasPrice: this.utils.toWei("20", 'gwei')
         }
@@ -24,7 +25,7 @@ class Web3Service {
     * @param    {String}  address   Contract's address 
     * @return   {Object}            Contract proxy                          
     */
-    factoryContract(abi, address = null) { return new this.web3.eth.Contract(Identity.abi, address) }
+    factoryContract(abi, address = null) { return new this.web3.eth.Contract(abi, address) }
 
    /**
     * Creates an account from private key
@@ -39,7 +40,12 @@ class Web3Service {
     *
     * @param    {Object}  account  account object 
     */
-    addAccount(account) { this.web3.eth.accounts.wallet.add(account) }
+    addAccount(account) { 
+        this.web3.eth.accounts.wallet.add(account) 
+        if(!this.defaultOptions.from){
+            this.defaultOptions.from = account.address
+        }
+    }
     
    /**
     * Gets web3
@@ -51,4 +57,4 @@ class Web3Service {
 }
 
 
-export default Web3Service
+export { Web3Service }

@@ -1,6 +1,6 @@
 import { IdentityDag } from './IdentityDag'
 import { MultiHash } from './utils/MultiHash'
-import * as ipfsAPI from 'ipfs-api'
+import { default as ipfsAPI} from 'ipfs-api'
 
 class IpfsService {
    
@@ -29,7 +29,7 @@ class IpfsService {
         if(insertions) {
             const result = await handleInsertions(tree, insertions)    
         }
-        const ipfsHash = await saveObject(tree)
+        const ipfsHash = await this.saveObject(tree)
         return ipfsHash
     }
 
@@ -41,7 +41,7 @@ class IpfsService {
     */
     saveObject(jsonData) {
         const stringData = JSON.stringify(jsonData)
-        return saveData(stringData)
+        return this.saveData(stringData)
     }
 
    /**
@@ -51,7 +51,7 @@ class IpfsService {
     * @returns {Object}                  Object stored on IPFS
     */
     async getObject(ipfsHash) {
-        const stringData = await getData(ipfsHash)
+        const stringData = await this.getData(ipfsHash)
         return JSON.parse(stringData)
     }
 
@@ -132,7 +132,7 @@ class IpfsService {
     async insertNodes(ipfsHash, insertions) {
         let tree = await this.getObject(ipfsHash)
         const result = await handleInsertions(tree, insertions)    
-        const treeHash = await saveObject(tree)
+        const treeHash = await this.saveObject(tree)
         return treeHash
     }
 
@@ -149,7 +149,7 @@ class IpfsService {
         const dataIpfsHash = await this.saveData(data)
         const tree = await this.getObject(ipfsHash)
         IdentityDag.updateNode(tree, search, dataIpfsHash)
-        return await saveObject(tree)
+        return await this.saveObject(tree)
     }
 
    /**
@@ -162,7 +162,7 @@ class IpfsService {
     async removeNode(ipfsHash, search) {
         const tree = await this.getObject(ipfsHash)
         IdentityDag.removeNode(tree, search)
-        return await saveObject(tree)
+        return await this.saveObject(tree)
     }
 }
 
@@ -234,4 +234,4 @@ const fetchNodeData = async node => {
     return node
 }
 
-export default IpfsService
+export { IpfsService }

@@ -1,13 +1,15 @@
-{ 
-    "ignore": [
-        "node_modules/**/*"
-    ],
+{
+    "env": {
+        "production": {
+            "plugins": ["transform-es2015-modules-umd"]
+        }
+    },
     "presets": [
-        "es2015",
-        "stage-0",
-        "stage-1"
+        "es2015"
     ],
     "plugins": [
-        "transform-runtime"
+        "syntax-object-rest-spread",
+        "transform-object-rest-spread"
     ]
- }
+  }
+  
