@@ -2,16 +2,17 @@
 
 // Webpack
 const webpack = require('webpack')
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
 let libraryName = 'api'
 
 // Final Config
 module.exports = {
-  entry: {'api': './src/index.js'},
+  entry: ['./src/index.js'],
   devtool: 'source-map',
   output: {
-    filename: 'dist/[name].min.js',
-    library: libraryName,
+    filename: 'dist/api.min.js',
+    library: 'IdentityAPI',
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
@@ -43,9 +44,7 @@ module.exports = {
       minimize: true,
       debug: false
     }),
-    new webpack.optimize.UglifyJsPlugin({
-      sourceMap: true
-    }),
+    new UglifyJsPlugin(),
     new webpack.DefinePlugin({
       'process.env': { NODE_ENV: JSON.stringify('production') }
     })

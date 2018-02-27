@@ -13,10 +13,10 @@ let libraryName = 'api'
 
 // Final Config
 module.exports = {
-  entry: {'api': './src/index.js'},
+  entry: ['./src/index.js'],
   output: {
-    filename: 'dist/[name].js',
-    library: libraryName,
+    filename: 'dist/api.js',
+    library: 'IdentityAPI',
     libraryTarget: 'umd',
     umdNamedDefine: true
   },

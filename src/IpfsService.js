@@ -24,10 +24,10 @@ class IpfsService {
     * @param   {Object[]}       insertion.childrens    insertion childrens. Same structure of "insertion"
     * @returns {String}                                The location of the saved tree on IPFS
     */
-    async initTree(insertions = []) {
+    async initTree(insertions = null) {
         const tree = IdentityDag.initTree()
         if(insertions) {
-            const result = await handleInsertions(tree, insertions)    
+            const result = await this.handleInsertions(tree, insertions)    
         }
         const ipfsHash = await this.saveObject(tree)
         return ipfsHash
@@ -114,7 +114,7 @@ class IpfsService {
         const tree = await this.getObject(ipfsHash)
         let result = IdentityDag.dfs(tree, search)
         if(result && fetchData) {
-            result = await fetchNodeData(result)
+            result = await this.fetchNodeData(result)
         }
         return result
     }
@@ -131,11 +131,57 @@ class IpfsService {
     */
     async insertNodes(ipfsHash, insertions) {
         let tree = await this.getObject(ipfsHash)
-        const result = await handleInsertions(tree, insertions)    
+        const result = await this.handleInsertions(tree, insertions)    
         const treeHash = await this.saveObject(tree)
         return treeHash
     }
 
+    /**
+     * Organizes insertions within a node 
+     *
+     * @param   {Object}     node                   node object  
+     * @param   {Object[]}   insertions             array with tree insertions       
+     * @param   {String}     insertion.parentLabel  insertion parent label  
+     * @param   {String}     insertion.hash         insertion hash or   
+     * @param   {Object[]}   insertion.childrens    insertion childrens. Same structure of "insertion"
+     * @param   {String}     parentLabel            override the parent of insertions
+     * @returns {Promise<Object[],Error>}           A promise that resolves with the insertions or rejects with an error
+     */
+    async handleInsertions(node, insertions, parentLabel = null) {
+        let promises = []
+        for(let i=0; i < insertions.length; i++){
+            promises.push(this.handleInsertion(node, insertions[i], parentLabel).then(data => node))
+        }
+        return Promise.all(promises)
+    } 
+
+    /**
+     * Inserts a node under a parent node and save its data on IPFS
+     *
+     * @param   {Object}     node                   node object   
+     * @param   {Object}     insertion              node to be saved       
+     * @param   {String}     insertion.parentLabel  insertion parent label  
+     * @param   {String}     insertion.hash         insertion hash or   
+     * @param   {Object[]}   insertion.childrens    insertion childrens. Same structure of "insertion"
+     * @param   {String}     parentLabel            overrides the insertion parent 
+     * @returns {Object}                            node object
+     */
+    async handleInsertion(node, insertion, parentLabel) {
+        parentLabel = parentLabel ? parentLabel : insertion.parentLabel
+        let data = null
+        let childrens = null
+        if(!(insertion.childrens && insertion.childrens.length > 0)){
+            if(insertion.data) {
+                data = insertion.data
+            }  
+            childrens = null            
+        }
+        if(data) data = await this.saveData(data)
+        IdentityDag.insertNode(node, parentLabel, insertion.label, data)
+        if(insertion.childrens && insertion.childrens.length > 0)
+            return await this.handleInsertions(node, insertion.childrens, insertion.label)
+        return node
+    }
 
    /**
     * Updates a node into the IPFS tree 
@@ -164,74 +210,31 @@ class IpfsService {
         IdentityDag.removeNode(tree, search)
         return await this.saveObject(tree)
     }
-}
 
-/**
-  * Organizes insertions within a node 
-  *
-  * @param   {Object}     node                   node object  
-  * @param   {Object[]}   insertions             array with tree insertions       
-  * @param   {String}     insertion.parentLabel  insertion parent label  
-  * @param   {String}     insertion.hash         insertion hash or   
-  * @param   {Object[]}   insertion.childrens    insertion childrens. Same structure of "insertion"
-  * @param   {String}     parentLabel            override the parent of insertions
-  * @returns {Promise<Object[],Error>}           A promise that resolves with the insertions or rejects with an error
-  */
-  const handleInsertions = async (node, insertions, parentLabel = null) => {
-    let promises = []
-    for(let i=0; i < insertions.length; i++){
-        promises.push(handleInsertion(node, insertions[i], parentLabel).then(data => node))
-    }
-    return Promise.all(promises)
-} 
-
-/**
-  * Inserts a node under a parent node and save its data on IPFS
-  *
-  * @param   {Object}     node                   node object   
-  * @param   {Object}     insertion              node to be saved       
-  * @param   {String}     insertion.parentLabel  insertion parent label  
-  * @param   {String}     insertion.hash         insertion hash or   
-  * @param   {Object[]}   insertion.childrens    insertion childrens. Same structure of "insertion"
-  * @param   {String}     parentLabel            overrides the insertion parent 
-  * @returns {Object}                            node object
-  */
-const handleInsertion = async (node, insertion, parentLabel) => {
-    parentLabel = parentLabel ? parentLabel : insertion.parentLabel
-    let data = null
-    let childrens = null
-    if(!(insertion.childrens && insertion.childrens.length > 0)){
-        if(insertion.data) {
-            data = insertion.data
-        }  
-        childrens = null            
-    }
-    if(data) data = await this.saveData(data)
-    IdentityDag.insertNode(node, parentLabel, insertion.label, data)
-    if(insertion.childrens && insertion.childrens.length > 0)
-        return await handleInsertions(node, insertion.childrens, insertion.label)
-    return node
-}
-
-/**
-  * Retrieves the node's pure data on IPFS 
-  * 
-  * @param   {Object}   node  target node
-  * @return  {Object}         node with its data                                               
-  */
-const fetchNodeData = async node => {
-    if(node.childrens && node.childrens.length > 0) {
-        let promises = []
-        for(let i = 0; i < node.childrens.length; i++){
-            promises.push(fetchNodeData(node.childrens[i]))
+    /**
+     * Retrieves the node's pure data on IPFS 
+     * 
+     * @param   {Object}   node  target node
+     * @return  {Object}         node with its data                                               
+     */
+    async fetchNodeData(node) {
+        if(node.childrens && node.childrens.length > 0) {
+            let promises = []
+            for(let i = 0; i < node.childrens.length; i++){
+                promises.push(this.fetchNodeData(node.childrens[i]))
+            }
+            return Promise.all(promises).then(data => {
+                return node
+            })
+        }else if(node.hash){
+            node.hash = await this.getData(node.hash)
         }
-        return Promise.all(promises).then(data => {
-            return node
-        })
-    }else if(node.hash){
-        node.hash = await IpsIdentity.getData(node.hash)
+        return node
     }
-    return node
 }
+
+
+
+
 
 export { IpfsService }

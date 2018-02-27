@@ -29,7 +29,7 @@ class IdentityDag {
         }
         else if(node.childrens && node.childrens.length > 0) {
             for(let i = 0; i < node.childrens.length; i++){
-                result = this.insertNode(node.childrens[i], parentLabel, label, hash)
+                let result = this.insertNode(node.childrens[i], parentLabel, label, hash)
                 if(result) {
                     node = renewNodeHash(node)
                     return node
@@ -50,7 +50,7 @@ class IdentityDag {
         if(node.label === search) return node
         else if(node.childrens && node.childrens.length > 0) {
             for(let i = 0; i < node.childrens.length; i++){
-                result = this.dfs(node.childrens[i], search)
+                let result = this.dfs(node.childrens[i], search)
                 if(result) return result
             }
         }
@@ -71,7 +71,7 @@ class IdentityDag {
         }
         else if(node.childrens && node.childrens.length > 0) {
             for(let i = 0; i < node.childrens.length; i++){
-                result = this.updateNode(node.childrens[i], search, data)
+                let result = this.updateNode(node.childrens[i], search, data)
                 if(result) return renewNodeHash(node)
             }
         }
@@ -90,7 +90,7 @@ class IdentityDag {
         if(node.label === search) return node
         else if(node.childrens && node.childrens.length > 0) {
             for(let i = 0; i < node.childrens.length; i++){
-                result = this.removeNode(node.childrens[i], search)
+                let result = this.removeNode(node.childrens[i], search)
                 if(result && result.label === search) {
                     node.childrens.splice(i,1)
                 }

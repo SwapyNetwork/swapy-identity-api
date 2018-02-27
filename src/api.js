@@ -9,7 +9,7 @@ const DEFAULTNETWORK = 'ganache'
 const networks = {
     'ropsten': { id: '0x3', protocol: '', token: '' },
     'rinkeby': { id: '0x4', protocol: '', token: '' },
-    'ganache': { id: '*', protocol: '0xf819835f5a773328a9a1821a28ed636d37ccef32', token: '' },
+    'ganache': { id: '*', protocol: "0xf0b2da1711795e35cd789951b3e8fc4c8a63532c", token: '' },
 }
 
 // contracts abi
@@ -367,6 +367,7 @@ class Api {
         if(!multiSig) {
             this.IdentityContract.options.address = identity
             const profileHash = await this.IdentityContract.methods.financialData().call()
+            console.log(profileNodes)
             const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes)
             return this.IdentityContract.methods
             .setFinancialData(this.utils.asciiToHex(newHash))
