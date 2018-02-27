@@ -2,13 +2,14 @@
   "name": "@swapynetwork/swapy-identity-api",
   "version": "0.0.1",
   "description": "",
-  "main": "dist/api.min.js",
+  "main": "dist/api.js",
   "scripts": {
     "build:npm": "npm run build-es5 && npm run build-dist && npm run build-dist-prod",
     "build": "yarn build-es5 && yarn build-dist && yarn build-dist-prod",
     "build-es5": "./node_modules/.bin/babel src -d lib --copy-files",
     "build-dist": "./node_modules/.bin/webpack --config webpack.config.js",
-    "build-dist-prod": "./node_modules/.bin/webpack --config webpack.prod-config.js",
+    "build-dist-prod": "./node_modules/.bin/webpack --config webpack.prod.config.js",
+    "serve": "webpack-dev-server",
     "watch": "./node_modules/.bin/webpack --config webpack.config.js -w",
     "prepublish": "npm run build-es5"
   },
