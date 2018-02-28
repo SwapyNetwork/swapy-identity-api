@@ -9,7 +9,7 @@ class QRCode {
      *  @return   {String}                  image URI
      */
     static getQRUri(content, type = 'png') {
-        const imgBuffer = QrImage.imageSync(data, { type })
+        const imgBuffer = QrImage.imageSync(content, { type })
         return `data:image/${type};charset=utf-8;base64,${imgBuffer.toString('base64')}`
     }
 }

@@ -1,5 +1,5 @@
-import * as UnixFs  from 'ipfs-unixfs'
-import DAGNode from 'ipld-dag-pb'
+import {default as Unixfs} from 'ipfs-unixfs'
+import {DAGNode} from 'ipld-dag-pb'
 
 class MultiHash {
     
@@ -11,7 +11,7 @@ class MultiHash {
      */
     static getMultiHash(buffer) {
         const unixFs = new Unixfs("file", buffer)
-        return new Promise((reject, resolve) => {
+        return new Promise((resolve, reject) => {
             DAGNode.create(unixFs.marshal(), (err, dagNode) => {
                 if(err) reject(err)
                 else resolve(dagNode.toJSON().multihash)

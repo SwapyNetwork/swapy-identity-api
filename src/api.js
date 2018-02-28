@@ -4,6 +4,7 @@ import { IpfsService } from './IpfsService'
 import { IdentityDag } from './IdentityDag'
 import { Web3Service } from './Web3Service'
 import { QRCode } from './utils/QRCode'
+import * as crypto from 'crypto-browserify'
 
 const DEFAULTNETWORK = 'ganache'
 const networks = {
@@ -143,9 +144,9 @@ class Api {
      * @param   {String}     expDate     credential's expiration timestamp
      * @param   {Boolean}    authorized  Identity's attestation 
      */
-    async authPooling(identity, seed, expDate, authorized) {
+    async authPooling(identity, seed, authorized) {
         const watcher = setTimeout( async () => {
-            authorized = await this.isAuthorized(identity, seed, expDate)
+            authorized = await this.isAuthorized(identity, seed)
             if(!authorized) await watchCredentials(identity, seed, expDate, authorized)
         },2000)
     }
@@ -158,7 +159,7 @@ class Api {
      * @param   {String}     expDate     credential's expiration timestamp 
      * @param   {Boolean}    authorized  Identity's attestation 
      */
-    async watchCredentials(identity, seed, expDate, authorized = false){
+    async watchCredentials(identity, seed, authorized = false){
         if(!authorized) authPooling(identity, seed, expDate, authorized)
         return authorized
     }
@@ -170,13 +171,12 @@ class Api {
      * @param   {String}     expDate     credential's expiration timestamp 
      * 
      */ 
-    async isAuthorized(identity, seed, expDate) {
+    async isAuthorized(identity, seed) {
         const credentials = {
             identityHash: sha3_256(identity),
-            seed, 
-            expDate 
+            seed
         }
-        const authorized = await ipfsService.attestCredentials(credentials)
+        const authorized = await this.ipfsService.attestCredentials(credentials)
         return authorized        
     }
 
@@ -188,19 +188,12 @@ class Api {
      * @param   {String}  expTimestamp
      *      
      */
-    async setCredentials(identity, seed, expTimestamp) {
-        const exp = moment.unix(expTimestamp)
-        const now = moment.unix().valueOf()
-        if(now.isBefore(exp)){
-            const credentials = {
-                identityHash: sha3_256(identity),
-                seed,
-                expTimestamp
-            }
-            return await ipfsService.saveObject(credentials)
-        }else{
-            throw false
+    async setCredentials(identity, seed) {
+        const credentials = {
+            identityHash: sha3_256(identity),
+            seed
         }
+        return await this.ipfsService.saveObject(credentials)
     }
 
    /**
