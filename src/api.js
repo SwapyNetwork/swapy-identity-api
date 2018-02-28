@@ -125,11 +125,13 @@ class Api {
     
     /**
      * Creates a random seed and hash it
-     * @returns     Random hash     
+     * @param   {Boolean}  QRencode  generate a QRCode with the hashed seed
+     * @returns                      Random hash     
      */
-    getSeed() {
+    getSeed(QRencode = false) {
         const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
-        return sha3_256(randomSeed)
+        if(QRencode) return QRCode.getQRUri(sha3_256(randomSeed))
+        else return sha3_256(randomSeed)
     }
 
     
