@@ -9,7 +9,7 @@ const DEFAULTNETWORK = 'ganache'
 const networks = {
     'ropsten': { id: '0x3', protocol: '', token: '' },
     'rinkeby': { id: '0x4', protocol: '', token: '' },
-    'ganache': { id: '*', protocol: "0xf0b2da1711795e35cd789951b3e8fc4c8a63532c", token: '' },
+    'ganache': { id: '*', protocol: "0x6a3238cdfb4705f82e7bf5b48d1b89c3b52e4bf1", token: '' },
 }
 
 // contracts abi
@@ -64,7 +64,7 @@ class Api {
     *
     * @return  {Object}  Web3 object                          
     */
-    getWeb3() { return this.web3 }
+    getWeb3() { return this.web3Service.getWeb3() }
 
    /**
     * Returns the protocol address.
