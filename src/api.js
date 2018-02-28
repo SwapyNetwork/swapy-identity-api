@@ -155,12 +155,11 @@ class Api {
      * Watch for Identity's credential attestation
      * 
      * @param   {String}     identity    Identity's address
-     * @param   {String}     seed        auth seed
-     * @param   {String}     expDate     credential's expiration timestamp 
+     * @param   {String}     seed        auth seed 
      * @param   {Boolean}    authorized  Identity's attestation 
      */
     async watchCredentials(identity, seed, authorized = false){
-        if(!authorized) authPooling(identity, seed, expDate, authorized)
+        if(!authorized) authPooling(identity, seed, authorized)
         return authorized
     }
     /**
@@ -168,7 +167,6 @@ class Api {
      *
      * @param   {String}     identity    Identity's address
      * @param   {String}     seed        auth seed
-     * @param   {String}     expDate     credential's expiration timestamp 
      * 
      */ 
     async isAuthorized(identity, seed) {
@@ -176,7 +174,8 @@ class Api {
             identityHash: sha3_256(identity),
             seed
         }
-        const authorized = await this.ipfsService.attestCredentials(credentials)
+        let authorized = false;
+        authorized = await this.ipfsService.attestCredentials(credentials)
         return authorized        
     }
 
@@ -185,7 +184,6 @@ class Api {
      * 
      * @param   {String}  identity
      * @param   {String}  seed
-     * @param   {String}  expTimestamp
      *      
      */
     async setCredentials(identity, seed) {

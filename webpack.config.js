@@ -44,6 +44,11 @@ module.exports = {
     modules: [ './src', 'node_modules' ],
     extensions: ['.js', '.json']
   },
+  devServer: {
+    headers: {
+        'Access-Control-Allow-Origin': '*'
+    }
+  },
   plugins: [
     globalsPlugin
   ]

@@ -98,8 +98,12 @@ class IpfsService {
     async attestCredentials(credentials) {
         const buffer = Buffer.from(JSON.stringify(credentials))
         const offlineMultiHash = await MultiHash.getMultiHash(buffer)
-        const attested = await this.getData(offlineMultiHash)
-        return false
+        try {
+            await this.getData(offlineMultiHash)
+            return true
+        }catch(err){
+            return false
+        }
     }
 
    /**
