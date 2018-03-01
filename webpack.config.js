@@ -9,9 +9,7 @@ const globalsPlugin = new webpack.DefinePlugin({
   'process.env': { 'NODE_ENV': JSON.stringify('development') }
 })
 
-let libraryName = 'api'
-
-// Final Config
+// Config
 module.exports = {
   entry: ['./src/index.js'],
   output: {

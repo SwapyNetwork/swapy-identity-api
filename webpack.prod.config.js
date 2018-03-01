@@ -4,9 +4,7 @@
 const webpack = require('webpack')
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
-let libraryName = 'api'
-
-// Final Config
+// Config
 module.exports = {
   entry: ['./src/index.js'],
   devtool: 'source-map',
