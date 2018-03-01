@@ -7,7 +7,7 @@ Swapy Identity API aims to ease the interaction with Swapy financial identities.
   * Create, sign and execute transactions on multi sig identities;
   * Decentralized attestation of identitiy's credentials on IPFS with QRCode for third-parties;
 
-Check out our smart-contracts and Wiki for more details around the Swapy Identity Protocol. 
+Check out our smart-contracts and Wiki for more details around Swapy Identity Protocol. 
   
   
 ## Install
@@ -18,10 +18,19 @@ npm install @swapynetwork/swapy-identity-api
 
 ## Usage Guide
 
-Init the API with a first account, IPFS's host, Ethereum http provider and network parameters as well.
+Init the API with a first account, IPFS's host, Ethereum http provider and network parameters as well
 ```
 import { Api } from '@swapynetwork/swapy-identity-api'
-const api = new Api(...)
+const api = new Api('<0xPrivateKey>','<ipfsHost>','<ipfsPort>','http/https','<ethereumHttpProvider')
 ```
 
+### Doc
 
+* Api
+    * new Api(privateKey,ipfsHost,ipfsPort,ipfsProtocol,httpProvider,_networkName)
+    * .createPersonalIdentity() : <code>Promise.&lt;Object, Error&gt;</code>
+    * .getProfileData(identity, fetchData) : <code>Promise.&lt;Object, Error&gt;</code>
+    * .insertProfileData(profileNodes, identity, multiSig, opt) : <code>Promise.&lt;Object, Error&gt;</code>
+    * .updateProfileData(nodeLabel, data, identity, multiSig, opt) : <code>Promise.&lt;Object, Error&gt;</code>
+    * .sellIdentityData(identity, saleNodes, price) : <code>String</code>
+    * .buyIdentityData(identity, seller, saleNodes, price, opt) : <code>Object</code>
