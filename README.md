@@ -9,7 +9,7 @@ Swapy Identity API aims to ease the interaction with Swapy financial identities.
   
   
 ## Install
-The API is avaiable on NPM. So, install it:
+The API is available on NPM. So, install it
 ```
 npm install @swapynetwork/swapy-identity-api
 ```
