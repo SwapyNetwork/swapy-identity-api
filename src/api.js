@@ -10,7 +10,7 @@ const DEFAULTNETWORK = 'ganache'
 const networks = {
     'ropsten': { id: '0x3', protocol: '', token: '' },
     'rinkeby': { id: '0x4', protocol: '', token: '' },
-    'ganache': { id: '*', protocol: "0x6a3238cdfb4705f82e7bf5b48d1b89c3b52e4bf1", token: '' },
+    'ganache': { id: '*', protocol: "0xec850a439214fe9ee49fdcfff4683cae1ef3407a", token: '0x688389535167602ddbca611e2bde323963bfb2da' },
 }
 
 // contracts abi
@@ -245,6 +245,21 @@ class Api {
 
     }
 
+   /**
+    * Returns Identity's token balance.
+    *
+    * @param   {String}    identity   the identity address
+    * @return  {Integer}              Identity's token balance
+    */
+    async getTokenBalance(identity, opt = {
+        from: null, gas: null, gasPrice: null 
+    }) {
+        const from = opt.from ? opt.from : this.defaultOptions.from
+        const gas = opt.gas ? opt.gas : this.defaultOptions.gas
+        const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
+        return this.TokenContract.methods.balanceOf(identity).call()
+    }
+
     /**
     * Creates a sell transaction for identity's data 
     *
@@ -268,11 +283,12 @@ class Api {
     /**
     * Transfer tokens and retrieve the data bought
     *
-    * @param   {String}      identity         identity's contract address 
+    * @param   {String}      identity         Buyer Identity's contract address 
+    * @param   {String}      seller           Seller Identity's contract address
     * @param   {Object[]}    saleNodes        List of nodes to be selled 
     * @param   {String}      saleNodes.label  Node label
     * @param   {Integer}     price            Sale price. 
-    * @return  {String}                       QRcode image uri                          
+    * @return  {Object}                       Data bought                          
     */
     async buyIdentityData(identity, seller, saleNodes, price, opt = {
         from: null, gas: null, gasPrice: null 
@@ -281,9 +297,10 @@ class Api {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        
-        const txData = this.TokenContract.methods.transfer(seller, price).encodeABI()
-        await this.forwardTransaction(identity, this.TokenContract.options.address, 0, 0, txData)
+        if(price > 0) {
+            const txData = this.TokenContract.methods.transfer(seller, price).encodeABI()
+            await this.forwardTransaction(identity, this.TokenContract.options.address, 0, 0, txData)
+        }
         const sellerTree = await this.getProfileData(seller, true)
         const dataBought = {}
         saleNodes.forEach( node  => {   
