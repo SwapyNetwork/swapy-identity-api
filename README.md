@@ -32,5 +32,6 @@ const api = new Api('<0xPrivateKey>','<ipfsHost>','<ipfsPort>','http/https','<et
     * .getProfileData(identity, fetchData) : <code>Promise.&lt;Object, Error&gt;</code>
     * .insertProfileData(profileNodes, identity, multiSig, opt) : <code>Promise.&lt;Object, Error&gt;</code>
     * .updateProfileData(nodeLabel, data, identity, multiSig, opt) : <code>Promise.&lt;Object, Error&gt;</code>
+    * .getTokenBalance(identity) : <code>Integer</code>
     * .sellIdentityData(identity, saleNodes, price) : <code>String</code>
     * .buyIdentityData(identity, seller, saleNodes, price, opt) : <code>Object</code>

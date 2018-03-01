@@ -251,13 +251,8 @@ class Api {
     * @param   {String}    identity   the identity address
     * @return  {Integer}              Identity's token balance
     */
-    async getTokenBalance(identity, opt = {
-        from: null, gas: null, gasPrice: null 
-    }) {
-        const from = opt.from ? opt.from : this.defaultOptions.from
-        const gas = opt.gas ? opt.gas : this.defaultOptions.gas
-        const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        return this.TokenContract.methods.balanceOf(identity).call()
+    async getTokenBalance(identity) {
+        return await this.TokenContract.methods.balanceOf(identity).call()
     }
 
     /**
