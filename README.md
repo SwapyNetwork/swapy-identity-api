@@ -21,13 +21,13 @@ npm install @swapynetwork/swapy-identity-api
 Init the API with a first account, IPFS's host, Ethereum http provider and network parameters as well
 ```
 import { Api } from '@swapynetwork/swapy-identity-api'
-const api = new Api('<0xPrivateKey>','<ipfsHost>','<ipfsPort>','http/https','<ethereumHttpProvider')
+const api = new Api('<0xPrivateKey>','<ethereumHttpProvider')
 ```
 
 ### Doc
 
 * Api
-    * new Api(privateKey,ipfsHost,ipfsPort,ipfsProtocol,httpProvider,_networkName)
+    * new Api(privateKey,httpProvider,_networkName)
     * .createPersonalIdentity() : <code>Promise.&lt;Object, Error&gt;</code>
     * .getProfileData(identity, fetchData) : <code>Promise.&lt;Object, Error&gt;</code>
     * .insertProfileData(profileNodes, identity, multiSig, opt) : <code>Promise.&lt;Object, Error&gt;</code>

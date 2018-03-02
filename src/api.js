@@ -1,10 +1,11 @@
 import * as Moment from 'moment'
+import * as crypto from 'crypto-browserify'
 import { sha3_256 } from 'js-sha3'
 import { IpfsService } from './IpfsService'
 import { IdentityDag } from './IdentityDag'
 import { Web3Service } from './Web3Service'
 import { QRCode } from './utils/QRCode'
-import * as crypto from 'crypto-browserify'
+
 
 const DEFAULTNETWORK = 'ganache'
 
@@ -14,7 +15,11 @@ const networks = {
     'ganache': { id: '*', protocol: "0xec850a439214fe9ee49fdcfff4683cae1ef3407a", token: '0x688389535167602ddbca611e2bde323963bfb2da' },
 }
 
-
+const ipfsOptions = {
+    protocol : 'https',
+    host: 'ipfs.infura.io',
+    port: '5001' 
+}
 
 // contracts abi
 const IdentityProtocol = require('./contracts/abi/IdentityProtocol.json')
@@ -28,9 +33,6 @@ class Api {
     * Initializes web3, wallet, contracts and IPFS's connection.
     *
     * @param    {String}  privateKey    default account's private key
-    * @param    {String}  ipfsHost      ipfs host
-    * @param    {String}  ipfsPort      ipfs connection port
-    * @param    {String}  ipfsProtocol  ipfs protocotol https/http
     * @param    {String}  httpProvider  ethereum http provider
     * @param    {String}  _networkName  ethereum network name ropsten/rinkeby/ganache
     */
@@ -42,7 +44,7 @@ class Api {
         httpProvider,
         _networkName = DEFAULTNETWORK
     ) {
-        this.ipfsService = new IpfsService(ipfsHost, ipfsPort, ipfsProtocol)
+        this.ipfsService = new IpfsService(ipfsOptions.host, ipfsOptions.port, ipfsOptions.protocol)
         this.web3Service = new Web3Service(httpProvider)
         this.addAccountFromPrivateKey(privateKey)
         this.IdentityContract = this.web3Service.factoryContract(Identity.abi)
