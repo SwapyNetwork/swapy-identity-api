@@ -7,11 +7,14 @@ import { QRCode } from './utils/QRCode'
 import * as crypto from 'crypto-browserify'
 
 const DEFAULTNETWORK = 'ganache'
+
 const networks = {
-    'ropsten': { id: '0x3', protocol: '', token: '' },
-    'rinkeby': { id: '0x4', protocol: '', token: '' },
+    'ropsten': { id: '*', protocol: '0x37c3284b2d99f1c805092ecec7e0658638377394', token: '0xddcc1ebf2f4d47b485a201b64f41c1ddd18ab247' },
+    'rinkeby': { id: '*', protocol: '0x6b592dd3af172e2a2f20819f9db6e52205533233', token: '0xc32d87cbc83983faf37cc947584c115ec6b4e197' },
     'ganache': { id: '*', protocol: "0xec850a439214fe9ee49fdcfff4683cae1ef3407a", token: '0x688389535167602ddbca611e2bde323963bfb2da' },
 }
+
+
 
 // contracts abi
 const IdentityProtocol = require('./contracts/abi/IdentityProtocol.json')
