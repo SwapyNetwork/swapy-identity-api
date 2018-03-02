@@ -7,7 +7,7 @@ Swapy Identity API aims to ease the interaction with Swapy financial identities.
   * Create, sign and execute transactions on multi sig identities;
   * Decentralized attestation of identitiy's credentials on IPFS with QRCode for third-parties;
 
-Check out our smart-contracts and Wiki for more details around Swapy Identity Protocol. 
+Check out our [smart contracts](https://github.com/SwapyNetwork/swapy-identity-protocol) and [Wiki](https://github.com/swapynetwork/wiki/wiki/Self-Sovereign-Identity) for more details around Swapy Identity Protocol. 
   
   
 ## Install
