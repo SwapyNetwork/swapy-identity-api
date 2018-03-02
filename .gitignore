@@ -7,6 +7,8 @@
 /tmp
 /out-tsc
 /installers
+/public 
+/lib
 
 # dependencies
 /node_modules
@@ -49,3 +51,4 @@ UserInterfaceState.xcuserstate
 #Files
 env.json
 test.js
+test2.js
