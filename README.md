@@ -39,8 +39,7 @@ const api = new Api('<0xPrivateKey>','<ethereumHttpProvider')
 
 #### .createPersonalIdentity(profileDataNodes, opt)
 
-| Description | Instantiates a new personal identity. |
-|-------------|---------------------------------------|
+Instantiates a new personal identity
 
 
 | Input                        | Type      | Description          | Default value                           |
@@ -63,8 +62,7 @@ const api = new Api('<0xPrivateKey>','<ethereumHttpProvider')
 
 #### .getProfileData(identity, fetchData)
 
-| Description | Returns the profile data of an identity |
-|-------------|-----------------------------------------|
+Returns the profile data of an identity 
 
 | Input     | Type      | Description                 | Default value  |
 |-----------|-----------|-----------------------------|----------------|
@@ -78,8 +76,7 @@ const api = new Api('<0xPrivateKey>','<ethereumHttpProvider')
 
 #### .insertProfileData(profileNodes, identity, multiSig, opt)
 
-| Description | Inserts nodes on the profile tree |
-|-------------|-----------------------------------|
+Inserts nodes on the profile tree 
 
 | Input                    | Type      | Description                 | Default value                           |
 |--------------------------|-----------|-----------------------------|-----------------------------------------|
@@ -103,10 +100,7 @@ const api = new Api('<0xPrivateKey>','<ethereumHttpProvider')
 
 #### .updateProfileData(profileNodes, identity, multiSig, opt)
 
-nodeLabel, data, identity, multiSig, opt
-
-| Description | Inserts nodes on the profile tree |
-|-------------|-----------------------------------|
+Inserts nodes on the profile tree 
 
 | Input                    | Type      | Description                 | Default value                           |
 |--------------------------|-----------|-----------------------------|-----------------------------------------|
@@ -127,8 +121,7 @@ nodeLabel, data, identity, multiSig, opt
 
 #### .getTokenBalance(identity)
 
-| Description | Returns Identity's Swapy Token balance |
-|-------------|----------------------------------------|
+Returns Identity's Swapy Token balance
 
 | Input     | Type      | Description                 | Default value  |
 |-----------|-----------|-----------------------------|----------------|
@@ -142,8 +135,7 @@ nodeLabel, data, identity, multiSig, opt
 
 #### .getTokenBalance(identity)
 
-| Description | Returns Identity's Swapy Token balance |
-|-------------|----------------------------------------|
+Returns Identity's Swapy Token balance
 
 | Input     | Type      | Description                 | Default value  |
 |-----------|-----------|-----------------------------|----------------|
@@ -156,8 +148,7 @@ nodeLabel, data, identity, multiSig, opt
 
 #### .sellIdentityData(identity, saleNodes, price)
 
-| Description | Generates a qrCode image that contains the sale arguments |
-|-------------|-----------------------------------------------------------|
+Generates a qrCode image that contains the sale arguments
 
 | Input           | Type      | Description                 | Default value  |
 |-----------------|-----------|-----------------------------|----------------|
@@ -173,9 +164,7 @@ nodeLabel, data, identity, multiSig, opt
 
 #### .buyIdentityData(identity, seller, saleNodes, price, opt)
 
-
-| Description | Transfer tokens to seller's identity and retrieve the data bought |
-|-------------|-------------------------------------------------------------------| 
+Transfer tokens to seller's identity and retrieve the data bought
 
 | Input           | Type      | Description                        | Default value                           |
 |-----------------|-----------|------------------------------------|-----------------------------------------|
