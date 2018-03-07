@@ -235,6 +235,42 @@ class IpfsService {
         }
         return node
     }
+
+    createPath(path) {
+        return new Promise((resolve, reject) => {
+            this.ipfs.files.mkdir(path, (err) => {
+                if(err) reject(err)
+                else resolve(true)
+            })
+        }) 
+    }
+
+    writeFile(path, content) {
+        return new Promise((resolve, reject) => {
+            this.ipfs.files.write(path, Buffer.from(content), {create: true}, (err) => {
+                if(err) reject(err)
+                else resolve(true)
+            })
+        }) 
+    }
+
+    readPath(path) {
+        return new Promise((resolve, reject) => {
+            this.ipfs.files.read(path, (err, buf) => {
+                if(err) reject(err)
+                else resolve(buf)
+            })
+        }) 
+    }
+
+    rmPath(path) {
+        return new Promise((resolve, reject) => {
+            this.ipfs.files.rm(path, {recursive: true}, (err) => {
+                if(err) reject(err)
+                else resolve(true)
+            })
+        }) 
+    }
 }
 
 

@@ -484,6 +484,24 @@ class Api {
         .addTransaction(identity, 0, txData)
         .send({ from, gas, gasPrice })
     }
+
+    async createPath(path) {
+        return await this.ipfsService.createPath(path)
+    }
+
+    async writeFile(path, content) {
+        return await this.ipfsService.writeFile(path, content)
+    }
+
+    async readPath(path) {
+        return await this.ipfsService.readPath(path)
+    }
+
+    async rmPath(path){
+        return await this.ipfsService.rmPath(path)
+    }
+
+
 }
 
 export default Api
