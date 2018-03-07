@@ -236,6 +236,24 @@ class IpfsService {
         return node
     }
 
+    async initAuth(seed) {
+        try {
+            await this.createPath(`/${seed}`)
+        }catch(err){
+            return false
+        }
+        return true
+    }
+
+    async setAuthCredentials(credentials, seed) {
+        try {
+            await this.writeFile(`/${seed}/auth.txt`, credentials)
+        }catch(err){
+            return false
+        }
+        return true
+    }
+
     createPath(path) {
         return new Promise((resolve, reject) => {
             this.ipfs.files.mkdir(path, (err) => {

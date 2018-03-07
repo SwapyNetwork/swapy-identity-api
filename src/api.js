@@ -136,8 +136,10 @@ class Api {
      */
     getSeed(QRencode = false) {
         const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
-        if(QRencode) return QRCode.getQRUri(sha3_256(randomSeed))
-        else return sha3_256(randomSeed)
+        const seedHash = sha3_256(randomSeed)
+        await this.ipfsService.initAuth(seedHash)
+        if(QRencode) return QRCode.getQRUri(seedHash)
+        else return seedHash
     }
 
     
@@ -192,11 +194,9 @@ class Api {
      *      
      */
     async setCredentials(identity, seed) {
-        const credentials = {
-            identityHash: sha3_256(identity),
-            seed
-        }
-        return await this.ipfsService.saveObject(credentials)
+        // @todo sign a transaction with identity and seed
+        const credentials = '0x32433875943254365463542364536453264523654324'
+        return await this.ipfsService.setAuthCredentials(seed, credentials)
     }
 
    /**
@@ -484,23 +484,6 @@ class Api {
         .addTransaction(identity, 0, txData)
         .send({ from, gas, gasPrice })
     }
-
-    async createPath(path) {
-        return await this.ipfsService.createPath(path)
-    }
-
-    async writeFile(path, content) {
-        return await this.ipfsService.writeFile(path, content)
-    }
-
-    async readPath(path) {
-        return await this.ipfsService.readPath(path)
-    }
-
-    async rmPath(path){
-        return await this.ipfsService.rmPath(path)
-    }
-
 
 }
 
