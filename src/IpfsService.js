@@ -254,6 +254,15 @@ class IpfsService {
         return true
     }
 
+    async getAuthCredentials(seed){
+        try {
+            const signature = await this.readPath(`/${seed}/auth.txt`)
+            return signature
+        }catch(err){
+            return false
+        }
+    }
+
     createPath(path) {
         return new Promise((resolve, reject) => {
             this.ipfs.files.mkdir(path, (err) => {

@@ -134,12 +134,15 @@ class Api {
      * @param   {Boolean}  QRencode  generate a QRCode with the hashed seed
      * @returns                      Random hash     
      */
-    getSeed(QRencode = false) {
+    async getSeed(QRencode = false) {
         const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
         const seedHash = sha3_256(randomSeed)
         await this.ipfsService.initAuth(seedHash)
-        if(QRencode) return QRCode.getQRUri(seedHash)
-        else return seedHash
+        let authObject = {
+            seed : seedHash
+        }
+        if(QRencode) authObject.QRCode = QRCode.getQRUri(seedHash)
+        return authObject
     }
 
     
@@ -177,12 +180,16 @@ class Api {
      * 
      */ 
     async isAuthorized(identity, seed) {
-        const credentials = {
-            identityHash: sha3_256(identity),
-            seed
+        const authCredentials = await this.ipfsService.getAuthCredentials(seed)
+        let authorized = false
+        if(authCredentials) {
+            const signer = await this.web3Service.getCredentialsSigner(seed, authCredentials)
+            if(signer) {
+                this.IdentityContract.options.address = identity
+                const identityOwner = await this.IdentityContract.methods.getOwner().call()
+                authorized = identityOwner == signer
+            } 
         }
-        let authorized = false;
-        authorized = await this.ipfsService.attestCredentials(credentials)
         return authorized        
     }
 
@@ -193,10 +200,9 @@ class Api {
      * @param   {String}  seed
      *      
      */
-    async setCredentials(identity, seed) {
-        // @todo sign a transaction with identity and seed
-        const credentials = '0x32433875943254365463542364536453264523654324'
-        return await this.ipfsService.setAuthCredentials(seed, credentials)
+    async setCredentials(seed) {
+        const authSignature = await this.web3Service.signCredentials(seed)
+        return await this.ipfsService.setAuthCredentials(seed, authSignature)
     }
 
    /**
@@ -357,7 +363,7 @@ class Api {
     async getProfileData(identity, fetchData = false) {
         this.IdentityContract.options.address = identity
         const profileHash = await this.IdentityContract.methods.financialData().call()
-        const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash),'root',fetchData)
+        const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash), 'root', fetchData)
         return tree           
     } 
    /**
