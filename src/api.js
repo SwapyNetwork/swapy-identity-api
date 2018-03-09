@@ -186,8 +186,8 @@ class Api {
         if(authCredentials) {
             const signer = await this.web3Service.getCredentialsSigner(seed, authCredentials)
             if(signer) {
-                this.IdentityContract.options.address = identity
                 try {
+                    this.IdentityContract.options.address = identity
                     const identityOwner = await this.IdentityContract.methods.owner().call()
                     authorized = identityOwner == signer
                 }catch(err){}

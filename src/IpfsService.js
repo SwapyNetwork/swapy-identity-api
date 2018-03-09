@@ -304,8 +304,4 @@ class IpfsService {
     }
 }
 
-
-
-
-
 export { IpfsService }
