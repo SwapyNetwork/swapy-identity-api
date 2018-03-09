@@ -12,7 +12,7 @@ const DEFAULTNETWORK = 'ganache'
 const networks = {
     'ropsten': { id: '*', protocol: '0x37c3284b2d99f1c805092ecec7e0658638377394', token: '0xddcc1ebf2f4d47b485a201b64f41c1ddd18ab247' },
     'rinkeby': { id: '*', protocol: '0x6b592dd3af172e2a2f20819f9db6e52205533233', token: '0xc32d87cbc83983faf37cc947584c115ec6b4e197' },
-    'ganache': { id: '*', protocol: "0xec850a439214fe9ee49fdcfff4683cae1ef3407a", token: '0x688389535167602ddbca611e2bde323963bfb2da' },
+    'ganache': { id: '*', protocol: '0x389b6c0fd02774c372914260355b97cf1207d0e8', token: '0x688389535167602ddbca611e2bde323963bfb2da' },
 }
 
 const ipfsOptions = {
@@ -137,12 +137,13 @@ class Api {
     async getSeed(QRencode = false) {
         const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
         const seedHash = sha3_256(randomSeed)
-        await this.ipfsService.initAuth(seedHash)
-        let authObject = {
-            seed : seedHash
-        }
-        if(QRencode) authObject.QRCode = QRCode.getQRUri(seedHash)
-        return authObject
+        const ipfsSuccess = await this.ipfsService.initAuth(seedHash)
+        if(ipfsSuccess) {
+            let authObject = { seed : seedHash }
+            if(QRencode) authObject.QRCode = QRCode.getQRUri(seedHash)
+            return authObject
+        }else return false
+        
     }
 
     
@@ -180,14 +181,16 @@ class Api {
      * 
      */ 
     async isAuthorized(identity, seed) {
-        const authCredentials = await this.ipfsService.getAuthCredentials(seed)
         let authorized = false
+        const authCredentials = await this.ipfsService.getAuthCredentials(seed)
         if(authCredentials) {
             const signer = await this.web3Service.getCredentialsSigner(seed, authCredentials)
             if(signer) {
                 this.IdentityContract.options.address = identity
-                const identityOwner = await this.IdentityContract.methods.getOwner().call()
-                authorized = identityOwner == signer
+                try {
+                    const identityOwner = await this.IdentityContract.methods.owner().call()
+                    authorized = identityOwner == signer
+                }catch(err){}
             } 
         }
         return authorized        

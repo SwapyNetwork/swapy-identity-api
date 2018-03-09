@@ -239,13 +239,13 @@ class IpfsService {
     async initAuth(seed) {
         try {
             await this.createPath(`/${seed}`)
+            return true
         }catch(err){
             return false
         }
-        return true
     }
 
-    async setAuthCredentials(credentials, seed) {
+    async setAuthCredentials(seed, credentials) {
         try {
             await this.writeFile(`/${seed}/auth.txt`, credentials)
         }catch(err){
@@ -256,8 +256,8 @@ class IpfsService {
 
     async getAuthCredentials(seed){
         try {
-            const signature = await this.readPath(`/${seed}/auth.txt`)
-            return signature
+            const credentials = await this.readPath(`/${seed}/auth.txt`)
+            return credentials
         }catch(err){
             return false
         }
@@ -285,7 +285,11 @@ class IpfsService {
         return new Promise((resolve, reject) => {
             this.ipfs.files.read(path, (err, buf) => {
                 if(err) reject(err)
-                else resolve(buf)
+                else {
+                    setTimeout(() => { 
+                        resolve(String.fromCharCode.apply(null, buf._readableState.buffer.tail.data))
+                    }, 5000)
+                }
             })
         }) 
     }

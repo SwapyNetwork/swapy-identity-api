@@ -55,13 +55,22 @@ class Web3Service {
     getWeb3() { return this.web3 }
 
     async signCredentials(seed) {
-        let accounts = await this.web3.eth.getAccounts()
-        const signature = await this.web3.eth.sign(seed, accounts[0])
-        return signature
+        try {
+            let accounts = await this.web3.eth.getAccounts()
+            const signature = await this.web3.eth.sign(seed, accounts[0])
+            return signature
+        }catch(err){
+            return false
+        }
     }
 
     async getCredentialsSigner(seed, signature){
-        return await this.web3.eth.accounts.recover(seed, signature)
+        try {
+            const signer = await this.web3.eth.accounts.recover(seed, signature)
+            return signer
+        }catch(err){
+            return null
+        }
     }
 
 }
