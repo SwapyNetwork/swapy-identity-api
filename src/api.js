@@ -15,11 +15,7 @@ const networks = {
     'ganache': { id: '*', protocol: '0x389b6c0fd02774c372914260355b97cf1207d0e8', token: '0x688389535167602ddbca611e2bde323963bfb2da' },
 }
 
-const ipfsOptions = {
-    protocol : 'https',
-    host: 'ipfs.infura.io',
-    port: '5001' 
-}
+const ipfsOptions = { protocol : 'https', host: 'ipfs.infura.io',  port: '5001' } 
 
 // contracts abi
 const IdentityProtocol = require('./contracts/abi/IdentityProtocol.json')
@@ -32,26 +28,19 @@ class Api {
    /**
     * Initializes web3, wallet, contracts and IPFS's connection.
     *
-    * @param    {String}  privateKey    default account's private key
     * @param    {String}  httpProvider  ethereum http provider
+    * @param    {String}  privateKey    default account's private key
     * @param    {String}  _networkName  ethereum network name ropsten/rinkeby/ganache
     */
-    constructor(
-        privateKey,
-        ipfsHost,
-        ipfsPort,
-        ipfsProtocol,
-        httpProvider,
-        _networkName = DEFAULTNETWORK
-    ) {
+    constructor( httpProvider, privateKey = null, _networkName = DEFAULTNETWORK ) {
         this.ipfsService = new IpfsService(ipfsOptions.host, ipfsOptions.port, ipfsOptions.protocol)
         this.web3Service = new Web3Service(httpProvider)
-        this.addAccountFromPrivateKey(privateKey)
         this.IdentityContract = this.web3Service.factoryContract(Identity.abi)
         this.MultiSigIdentityContract = this.web3Service.factoryContract(MultiSigIdentity.abi)
         this.IdentityProtocolContract = this.web3Service
             .factoryContract(IdentityProtocol.abi, networks[_networkName].protocol)
         this.TokenContract = this.web3Service.factoryContract(Token.abi, networks[_networkName].token)
+        if(privateKey) this.addAccountFromPrivateKey(privateKey)
         this.defaultOptions = this.web3Service.defaultOptions
         this.utils = this.web3Service.utils
     }
