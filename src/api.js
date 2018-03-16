@@ -62,24 +62,26 @@ class Api {
    /**
     * Instantiates a new personal identity.
     *
+    * @param       {String}                   identityId        An arbitrary index to identify the Identity
     * @param       {Object[]}                 profileDataNodes  Profile's tree nodes for insertion on IPFS
     * @param       {Object}                   opt               options
     * @param       {String}                   opt.from          set the tx sender
     * @return      {Promise<Object, Error>}                     A promise that resolves with the transaction object or rejects with an error                             
     */
-    async createPersonalIdentity(profileDataNodes = [], opt = { from: null, gas: null, gasPrice: null }) {
+    async createPersonalIdentity(identityId, profileDataNodes = [], opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         const profileHash = await this.ipfsService.initTree(profileDataNodes)
         return this.IdentityProtocolContract.methods
-        .createPersonalIdentity(this.utils.asciiToHex(profileHash))
+        .createPersonalIdentity(this.utils.asciiToHex(identityId),this.utils.asciiToHex(profileHash))
         .send({ from, gas, gasPrice })
     }
 
    /**
     * Instantiates a new multi signature identity.
     *
+    * @param   {String}                  identityId        An arbitrary index to identify the Identity 
     * @param   {String}                  profileDataNodes  the profile data location on IPFS
     * @param   {String[]}                owners            multi sig owners list
     * @param   {Integer}                 required          the required number of signatures 
@@ -89,13 +91,13 @@ class Api {
     * @param   {String}                  opt.gasPrice      set the tx gas price in gwei
     * @return  {Promise<Object, Error>}                    A promise that resolves with the transaction object or rejects with an error                          
     */
-    async createMultiSigIdentity(owners, required, profileDataNodes = [], opt = { from: null, gas: null, gasPrice: null }) {
+    async createMultiSigIdentity(identityId, owners, required, profileDataNodes = [], opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         const profileHash = await this.ipfsService.initTree(profileDataNodes)
         return this.IdentityProtocolContract.methods
-        .createMultiSigIdentity(this.utils.asciiToHex(profileHash), owners, required)
+        .createMultiSigIdentity(this.utils.asciiToHex(identityId),this.utils.asciiToHex(profileHash), owners, required)
         .send({ from, gas, gasPrice })
     }
 
@@ -107,6 +109,19 @@ class Api {
     async getIdentities() {
         const logs = await this.IdentityProtocolContract.getPastEvents('IdentityCreated', { fromBlock: 0 })
         return logs
+    }
+
+   /**
+    * Retrieves identity's address by its unique ID.
+    * 
+    * @param   {String}                     identityId    Identity's unique ID 
+    * @return  {String}  Identity address                          
+    */
+    async getIdentityById(identityId) {
+        const identityAddress = await this.IdentityProtocolContract.methods
+            .getIdentity(this.utils.asciiToHex(identityId))
+            .call()
+        return identityAddress
     }
     
     /**
