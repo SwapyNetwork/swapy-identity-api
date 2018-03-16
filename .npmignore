@@ -2,3 +2,4 @@ src/
 lib/
 test.js
 test2.js
+dist/test.js

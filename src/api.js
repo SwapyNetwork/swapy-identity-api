@@ -5,17 +5,8 @@ import { IpfsService } from './IpfsService'
 import { IdentityDag } from './IdentityDag'
 import { Web3Service } from './Web3Service'
 import { QRCode } from './utils/QRCode'
-
-
-const DEFAULTNETWORK = 'ganache'
-
-const networks = {
-    'ropsten': { id: '*', protocol: '0x37c3284b2d99f1c805092ecec7e0658638377394', token: '0xddcc1ebf2f4d47b485a201b64f41c1ddd18ab247' },
-    'rinkeby': { id: '*', protocol: '0x6b592dd3af172e2a2f20819f9db6e52205533233', token: '0xc32d87cbc83983faf37cc947584c115ec6b4e197' },
-    'ganache': { id: '*', protocol: '0x389b6c0fd02774c372914260355b97cf1207d0e8', token: '0x688389535167602ddbca611e2bde323963bfb2da' },
-}
-
-const ipfsOptions = { protocol : 'https', host: 'ipfs.infura.io',  port: '5001' } 
+import { ethAddresses, DEFAULT_NETWORK } from './config/ethereum'
+import { ipfsProvider } from './config/ipfs'
 
 // contracts abi
 const IdentityProtocol = require('./contracts/abi/IdentityProtocol.json')
@@ -32,14 +23,14 @@ class Api {
     * @param    {String}  privateKey    default account's private key
     * @param    {String}  _networkName  ethereum network name ropsten/rinkeby/ganache
     */
-    constructor( httpProvider, privateKey = null, _networkName = DEFAULTNETWORK ) {
-        this.ipfsService = new IpfsService(ipfsOptions.host, ipfsOptions.port, ipfsOptions.protocol)
+    constructor( httpProvider, privateKey = null, _networkName = DEFAULT_NETWORK) {
+        this.ipfsService = new IpfsService(ipfsProvider.host, ipfsProvider.port, ipfsProvider.protocol)
         this.web3Service = new Web3Service(httpProvider)
         this.IdentityContract = this.web3Service.factoryContract(Identity.abi)
         this.MultiSigIdentityContract = this.web3Service.factoryContract(MultiSigIdentity.abi)
         this.IdentityProtocolContract = this.web3Service
-            .factoryContract(IdentityProtocol.abi, networks[_networkName].protocol)
-        this.TokenContract = this.web3Service.factoryContract(Token.abi, networks[_networkName].token)
+            .factoryContract(IdentityProtocol.abi, ethAddresses[_networkName].protocol)
+        this.TokenContract = this.web3Service.factoryContract(Token.abi, ethAddresses[_networkName].token)
         if(privateKey) this.addAccountFromPrivateKey(privateKey)
         this.defaultOptions = this.web3Service.defaultOptions
         this.utils = this.web3Service.utils
