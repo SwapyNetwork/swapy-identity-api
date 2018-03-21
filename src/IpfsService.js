@@ -1,6 +1,7 @@
 import { IdentityDag } from './IdentityDag'
 import { MultiHash } from './utils/MultiHash'
 import { default as ipfsAPI} from 'ipfs-api'
+import EthCrypto from 'eth-crypto'
 
 class IpfsService {
    
@@ -114,7 +115,7 @@ class IpfsService {
     * @param   {Boolean}  fetchData   retrieve node's data value or its location
     * @return  {Object}               the desired node with its childrens if it exists                                              
     */
-    async searchNode(ipfsHash, search, fetchData = false) {
+    async searchNode(ipfsHash, search, fetchData = false, privateKey = null) {
         const tree = await this.getObject(ipfsHash)
         let result = IdentityDag.dfs(tree, search)
         if(result && fetchData) {
@@ -133,9 +134,9 @@ class IpfsService {
     * @param   {Object[]}   insertion.childrens    insertion childrens. Same structure of "insertion"
     * @returns {String}                            The location of the saved tree on IPFS
     */
-    async insertNodes(ipfsHash, insertions) {
+    async insertNodes(ipfsHash, insertions, pubKey) {
         let tree = await this.getObject(ipfsHash)
-        const result = await this.handleInsertions(tree, insertions)    
+        const result = await this.handleInsertions(tree, insertions, pubKey)    
         const treeHash = await this.saveObject(tree)
         return treeHash
     }
@@ -151,10 +152,10 @@ class IpfsService {
      * @param   {String}     parentLabel            override the parent of insertions
      * @returns {Promise<Object[],Error>}           A promise that resolves with the insertions or rejects with an error
      */
-    async handleInsertions(node, insertions, parentLabel = null) {
+    async handleInsertions(node, insertions, pubKey, parentLabel = null) {
         let promises = []
         for(let i=0; i < insertions.length; i++){
-            promises.push(this.handleInsertion(node, insertions[i], parentLabel).then(data => node))
+            promises.push(this.handleInsertion(node, insertions[i], pubKey, parentLabel).then(data => node))
         }
         return Promise.all(promises)
     } 
@@ -170,20 +171,20 @@ class IpfsService {
      * @param   {String}     parentLabel            overrides the insertion parent 
      * @returns {Object}                            node object
      */
-    async handleInsertion(node, insertion, parentLabel) {
+    async handleInsertion(node, insertion, pubKey, parentLabel) {
         parentLabel = parentLabel ? parentLabel : insertion.parentLabel
         let data = null
         let childrens = null
         if(!(insertion.childrens && insertion.childrens.length > 0)){
             if(insertion.data) {
-                data = insertion.data
+                data = JSON.stringify(await EthCrypto.encryptWithPublicKey(pubKey, insertion.data))
             }  
             childrens = null            
         }
         if(data) data = await this.saveData(data)
         IdentityDag.insertNode(node, parentLabel, insertion.label, data)
         if(insertion.childrens && insertion.childrens.length > 0)
-            return await this.handleInsertions(node, insertion.childrens, insertion.label)
+            return await this.handleInsertions(node, insertion.childrens, pubKey, insertion.label)
         return node
     }
 
@@ -195,7 +196,8 @@ class IpfsService {
     * @param   {String}     data                   new data   
     * @returns {String}                            The location of the saved tree on IPFS
     */
-    async updateNode(ipfsHash, search, data) {
+    async updateNode(ipfsHash, search, data, pubKey) {
+        data = JSON.stringify(await EthCrypto.encryptWithPublicKey(pubKey, data))
         const dataIpfsHash = await this.saveData(data)
         const tree = await this.getObject(ipfsHash)
         IdentityDag.updateNode(tree, search, dataIpfsHash)

@@ -41,7 +41,7 @@ class Api {
     *
     * @param   {String}                 privateKey   account's private key 
     */
-    addAccountFromPrivateKey(privateKey) {
+    async addAccountFromPrivateKey(privateKey) {
         const account = this.web3Service.privateKeyToAccount(privateKey)
         this.web3Service.addAccount(account)
     }
@@ -358,10 +358,10 @@ class Api {
     * @param   {Boolean}                fetchData  retrieve leafs data or not 
     * @return  {Promise<Object, Error>}            A promise that resolves with the transaction object or rejects with an error                          
     */
-    async getProfileData(identity, fetchData = false) {
+    async getProfileData(identity, fetchData = false, privKey = null) {
         this.IdentityContract.options.address = identity
         const profileHash = await this.IdentityContract.methods.financialData().call()
-        const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash), 'root', fetchData)
+        const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash), 'root', fetchData, privKey)
         return tree           
     } 
    /**
@@ -374,22 +374,21 @@ class Api {
     * @param   {String}                 opt.from          set the tx sender
     * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
     */
-    async insertProfileData(profileNodes, identity, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
+    async insertProfileData(profileNodes, identity, pubKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         if(!multiSig) {
             this.IdentityContract.options.address = identity
             const profileHash = await this.IdentityContract.methods.financialData().call()
-            console.log(profileNodes)
-            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes)
+            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes, pubKey)
             return this.IdentityContract.methods
             .setFinancialData(this.utils.asciiToHex(newHash))
             .send({ from, gas, gasPrice })
         }else{
             this.MultiSigIdentityContract.options.address = identity
             const profileHash = await this.MultiSigIdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes)
+            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes, pubKey)
             const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(newHash)).encodeABI()
             return this.MultiSigIdentityContract.methods
             .addTransaction(identity, 0, txData)
@@ -407,21 +406,21 @@ class Api {
     * @param   {String}                 opt.from          set the tx sender
     * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
     */
-    async updateProfileData(nodeLabel, data, identity, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
+    async updateProfileData(nodeLabel, data, identity, pubKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         if(!multiSig) {
             this.IdentityContract.options.address = identity
             const profileHash = await this.IdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data)
+            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data, pubKey)
             return this.IdentityContract.methods
             .setFinancialData(this.utils.asciiToHex(newHash))
             .send({ from, gas, gasPrice })
         }else{
             this.MultiSigIdentityContract.options.address = identity
             const profileHash = await this.MultiSigIdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data)
+            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data, pubKey)
             const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(newHash)).encodeABI()
             return this.MultiSigIdentityContract.methods
             .addTransaction(identity, 0, txData)

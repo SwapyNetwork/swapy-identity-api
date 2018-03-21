@@ -474,7 +474,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 906,
+                              "referencedDeclaration": 1027,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -515,7 +515,7 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 903,
+                                      "referencedDeclaration": 1024,
                                       "type": "msg",
                                       "value": "msg"
                                     },
@@ -959,7 +959,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 906,
+                              "referencedDeclaration": 1027,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -1199,7 +1199,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 905,
+                              "referencedDeclaration": 1026,
                               "type": "uint256",
                               "value": "now"
                             },
@@ -1450,7 +1450,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 905,
+                              "referencedDeclaration": 1026,
                               "type": "uint256",
                               "value": "now"
                             },
@@ -1494,5 +1494,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-03-16T22:23:47.187Z"
+  "updatedAt": "2018-03-21T18:52:59.684Z"
 }
