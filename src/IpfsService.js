@@ -233,8 +233,10 @@ class IpfsService {
                 return node
             })
         }else if(node.hash){
-            node.hash = await this.getData(node.hash)
-            if(privateKey) node.hash = await EthCrypto.decryptWithPrivateKey(privateKey, node.hash)
+            node.hash = await this.getObject(node.hash)
+            if(privateKey) {
+                node.hash = await EthCrypto.decryptWithPrivateKey(privateKey, node.hash)
+            }    
         }
         return node
     }
