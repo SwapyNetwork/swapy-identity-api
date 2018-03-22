@@ -172,7 +172,13 @@ class IpfsService {
         let data = null
         let childrens = null
         if(!(insertion.childrens && insertion.childrens.length > 0)){
-            if(insertion.data) data = JSON.stringify(await EthCrypto.encryptWithPublicKey(publicKey, insertion.data))
+            if(insertion.data) {
+                console.log(insertion.label)
+                console.log(insertion.data)
+                console.log(publicKey)
+                data = JSON.stringify(await EthCrypto.encryptWithPublicKey(publicKey, insertion.data))
+                console.log(data)
+            }
             childrens = null            
         }
         if(data) data = await this.saveData(data)

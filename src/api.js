@@ -1,6 +1,7 @@
 import * as Moment from 'moment'
 import * as crypto from 'crypto-browserify'
 import { sha3_256 } from 'js-sha3'
+import EthCrypto from 'eth-crypto'
 import { IpfsService } from './IpfsService'
 import { IdentityDag } from './IdentityDag'
 import { Web3Service } from './Web3Service'
@@ -274,10 +275,14 @@ class Api {
     * @param   {Integer}     price            Sale total price. Overrided by node's prices if it's null
     * @return  {String}                       QRcode image uri                          
     */
-    sellIdentityData(identity, saleNodes, price = 0) {
+    async sellIdentityData(identity, saleNodes, privateKey, publicKey, price = 0) {
         if(!price) saleNodes.forEach(node => {  price += parseInt(node.price) })
-        const sellObject = { identity, saleNodes, price }
-        return QRCode.getQRUri(JSON.stringify(sellObject))
+        const sellerTree = await this.getProfileData(identity, true, privateKey)
+        saleNodes.map(node => { 
+            let treeNode = IdentityDag.dfs(sellerTree, node.label) 
+            node.data = treeNode.hash
+        })
+        return QRCode.getQRUri(JSON.stringify({ identity, saleNodes, publicKey, price }))
     }
 
     /**
@@ -287,13 +292,13 @@ class Api {
     * @param   {String}      seller           Seller Identity's contract address
     * @param   {Object[]}    saleNodes        List of nodes to be selled 
     * @param   {String}      saleNodes.label  Node label
+    * @param   {String}      saleNodes.data   Node data
     * @param   {Integer}     price            Sale price. 
     * @return  {Object}                       Data bought                          
     */
-    async buyIdentityData(identity, seller, saleNodes, price, opt = {
+    async buyIdentityData(identity, seller, saleNodes, publicKey, price, opt = {
         from: null, gas: null, gasPrice: null 
     }) {
-        
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
@@ -301,10 +306,22 @@ class Api {
             const txData = this.TokenContract.methods.transfer(seller, price).encodeABI()
             await this.forwardTransaction(identity, this.TokenContract.options.address, 0, 0, txData)
         }
-        const sellerTree = await this.getProfileData(seller, true)
-        const dataBought = {}
-        saleNodes.forEach(node => { dataBought[node.label] = IdentityDag.dfs(sellerTree, node.label) })        
-        return dataBought
+        const encryptedTree = await this.getProfileData(seller, true)
+        let dataBought = {}
+        let promises = []
+        saleNodes.forEach( async node => { 
+            promises.push(this.setBoughtData(encryptedTree, node, publicKey, dataBought))
+        })
+        return Promise.all(promises).then((data) => { console.log(data) })
+    }
+
+    async setBoughtData(encryptedTree, boughtNode, publicKey, result) {
+        let treeNode = IdentityDag.dfs(encryptedTree, boughtNode.label)
+        const boughtNodeData = await EthCrypto.encryptWithPublicKey(publicKey, boughtNode.data)
+        if(sha3_256(JSON.stringify(boughtNodeData)) == sha3_256(JSON.stringify(treeNode.hash))){
+            result[boughtNode.label] = boughtNode
+        }
+        return result
     }
 
    /**
@@ -352,10 +369,10 @@ class Api {
     * @param   {Boolean}                fetchData  retrieve leafs data or not 
     * @return  {Promise<Object, Error>}            A promise that resolves with the transaction object or rejects with an error                          
     */
-    async getProfileData(identity, fetchData = false, privKey = null) {
+    async getProfileData(identity, fetchData = false, privateKey = null) {
         this.IdentityContract.options.address = identity
         const profileHash = await this.IdentityContract.methods.financialData().call()
-        const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash), 'root', fetchData, privKey)
+        const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash), 'root', fetchData, privateKey)
         return tree           
     } 
    /**
