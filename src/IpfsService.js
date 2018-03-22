@@ -197,6 +197,8 @@ class IpfsService {
     * @returns {String}                            The location of the saved tree on IPFS
     */
     async updateNode(ipfsHash, search, data, pubKey) {
+        console.log(data)
+        console.log(pubKey)
         data = JSON.stringify(await EthCrypto.encryptWithPublicKey(pubKey, data))
         const dataIpfsHash = await this.saveData(data)
         const tree = await this.getObject(ipfsHash)
