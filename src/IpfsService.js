@@ -119,7 +119,7 @@ class IpfsService {
         const tree = await this.getObject(ipfsHash)
         let result = IdentityDag.dfs(tree, search)
         if(result && fetchData) {
-            result = await this.fetchNodeData(result)
+            result = await this.fetchNodeData(result, privateKey)
         }
         return result
     }
@@ -223,17 +223,18 @@ class IpfsService {
      * @param   {Object}   node  target node
      * @return  {Object}         node with its data                                               
      */
-    async fetchNodeData(node) {
+    async fetchNodeData(node, privateKey) {
         if(node.childrens && node.childrens.length > 0) {
             let promises = []
             for(let i = 0; i < node.childrens.length; i++){
-                promises.push(this.fetchNodeData(node.childrens[i]))
+                promises.push(this.fetchNodeData(node.childrens[i], privateKey))
             }
             return Promise.all(promises).then(data => {
                 return node
             })
         }else if(node.hash){
             node.hash = await this.getData(node.hash)
+            if(privateKey) node.hash = await EthCrypto.decryptWithPrivateKey(privateKey, node.hash)
         }
         return node
     }
