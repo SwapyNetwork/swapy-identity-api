@@ -25,11 +25,9 @@ class IpfsService {
     * @param   {Object[]}       insertion.childrens    insertion childrens. Same structure of "insertion"
     * @returns {String}                                The location of the saved tree on IPFS
     */
-    async initTree(insertions = null) {
+    async initTree(insertions = null, publicKey = null) {
         const tree = IdentityDag.initTree()
-        if(insertions) {
-            const result = await this.handleInsertions(tree, insertions)    
-        }
+        if(insertions) await this.handleInsertions(tree, insertions, publicKey)
         const ipfsHash = await this.saveObject(tree)
         return ipfsHash
     }
@@ -134,9 +132,9 @@ class IpfsService {
     * @param   {Object[]}   insertion.childrens    insertion childrens. Same structure of "insertion"
     * @returns {String}                            The location of the saved tree on IPFS
     */
-    async insertNodes(ipfsHash, insertions, pubKey) {
+    async insertNodes(ipfsHash, insertions, publicKey) {
         let tree = await this.getObject(ipfsHash)
-        const result = await this.handleInsertions(tree, insertions, pubKey)    
+        const result = await this.handleInsertions(tree, insertions, publicKey)    
         const treeHash = await this.saveObject(tree)
         return treeHash
     }
@@ -152,10 +150,10 @@ class IpfsService {
      * @param   {String}     parentLabel            override the parent of insertions
      * @returns {Promise<Object[],Error>}           A promise that resolves with the insertions or rejects with an error
      */
-    async handleInsertions(node, insertions, pubKey, parentLabel = null) {
+    async handleInsertions(node, insertions, publicKey, parentLabel = null) {
         let promises = []
         for(let i=0; i < insertions.length; i++){
-            promises.push(this.handleInsertion(node, insertions[i], pubKey, parentLabel).then(data => node))
+            promises.push(this.handleInsertion(node, insertions[i], publicKey, parentLabel).then(data => node))
         }
         return Promise.all(promises)
     } 
@@ -171,20 +169,18 @@ class IpfsService {
      * @param   {String}     parentLabel            overrides the insertion parent 
      * @returns {Object}                            node object
      */
-    async handleInsertion(node, insertion, pubKey, parentLabel) {
+    async handleInsertion(node, insertion, publicKey, parentLabel) {
         parentLabel = parentLabel ? parentLabel : insertion.parentLabel
         let data = null
         let childrens = null
         if(!(insertion.childrens && insertion.childrens.length > 0)){
-            if(insertion.data) {
-                data = JSON.stringify(await EthCrypto.encryptWithPublicKey(pubKey, insertion.data))
-            }  
+            if(insertion.data) data = JSON.stringify(await EthCrypto.encryptWithPublicKey(publicKey, insertion.data))
             childrens = null            
         }
         if(data) data = await this.saveData(data)
         IdentityDag.insertNode(node, parentLabel, insertion.label, data)
         if(insertion.childrens && insertion.childrens.length > 0)
-            return await this.handleInsertions(node, insertion.childrens, pubKey, insertion.label)
+            return await this.handleInsertions(node, insertion.childrens, publicKey, insertion.label)
         return node
     }
 
@@ -196,10 +192,8 @@ class IpfsService {
     * @param   {String}     data                   new data   
     * @returns {String}                            The location of the saved tree on IPFS
     */
-    async updateNode(ipfsHash, search, data, pubKey) {
-        console.log(data)
-        console.log(pubKey)
-        data = JSON.stringify(await EthCrypto.encryptWithPublicKey(pubKey, data))
+    async updateNode(ipfsHash, search, data, publicKey) {
+        data = JSON.stringify(await EthCrypto.encryptWithPublicKey(publicKey, data))
         const dataIpfsHash = await this.saveData(data)
         const tree = await this.getObject(ipfsHash)
         IdentityDag.updateNode(tree, search, dataIpfsHash)
@@ -231,14 +225,10 @@ class IpfsService {
             for(let i = 0; i < node.childrens.length; i++){
                 promises.push(this.fetchNodeData(node.childrens[i], privateKey))
             }
-            return Promise.all(promises).then(data => {
-                return node
-            })
+            return Promise.all(promises).then(data => { return node })
         }else if(node.hash){
             node.hash = await this.getObject(node.hash)
-            if(privateKey) {
-                node.hash = await EthCrypto.decryptWithPrivateKey(privateKey, node.hash)
-            }    
+            if(privateKey) node.hash = await EthCrypto.decryptWithPrivateKey(privateKey, node.hash) 
         }
         return node
     }

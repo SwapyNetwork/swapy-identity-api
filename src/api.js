@@ -68,11 +68,11 @@ class Api {
     * @param       {String}                   opt.from          set the tx sender
     * @return      {Promise<Object, Error>}                     A promise that resolves with the transaction object or rejects with an error                             
     */
-    async createPersonalIdentity(identityId, profileDataNodes = [], opt = { from: null, gas: null, gasPrice: null }) {
+    async createPersonalIdentity(identityId, profileDataNodes = [], pubKey = null, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        const profileHash = await this.ipfsService.initTree(profileDataNodes)
+        const profileHash = await this.ipfsService.initTree(profileDataNodes, pubKey)
         return this.IdentityProtocolContract.methods
         .createPersonalIdentity(this.utils.asciiToHex(identityId),this.utils.asciiToHex(profileHash))
         .send({ from, gas, gasPrice })
