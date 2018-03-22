@@ -91,9 +91,7 @@ class IdentityDag {
         else if(node.childrens && node.childrens.length > 0) {
             for(let i = 0; i < node.childrens.length; i++){
                 let result = this.removeNode(node.childrens[i], search)
-                if(result && result.label === search) {
-                    node.childrens.splice(i,1)
-                }
+                if(result && result.label === search) node.childrens.splice(i,1)
                 if(result) return renewNodeHash(node)
             }
         }

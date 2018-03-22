@@ -91,11 +91,11 @@ class Api {
     * @param   {String}                  opt.gasPrice      set the tx gas price in gwei
     * @return  {Promise<Object, Error>}                    A promise that resolves with the transaction object or rejects with an error                          
     */
-    async createMultiSigIdentity(identityId, owners, required, profileDataNodes = [], opt = { from: null, gas: null, gasPrice: null }) {
+    async createMultiSigIdentity(identityId, owners, required, profileDataNodes = [], pubKey = null, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        const profileHash = await this.ipfsService.initTree(profileDataNodes)
+        const profileHash = await this.ipfsService.initTree(profileDataNodes, pubKey)
         return this.IdentityProtocolContract.methods
         .createMultiSigIdentity(this.utils.asciiToHex(identityId),this.utils.asciiToHex(profileHash), owners, required)
         .send({ from, gas, gasPrice })
@@ -275,11 +275,7 @@ class Api {
     * @return  {String}                       QRcode image uri                          
     */
     sellIdentityData(identity, saleNodes, price = 0) {
-        if(!price){
-            saleNodes.forEach( node => {
-                price += parseInt(node.price)  
-            })
-        }
+        if(!price) saleNodes.forEach(node => {  price += parseInt(node.price) })
         const sellObject = { identity, saleNodes, price }
         return QRCode.getQRUri(JSON.stringify(sellObject))
     }
@@ -307,9 +303,7 @@ class Api {
         }
         const sellerTree = await this.getProfileData(seller, true)
         const dataBought = {}
-        saleNodes.forEach( node  => {   
-             dataBought[node.label] = IdentityDag.dfs(sellerTree, node.label)
-        })        
+        saleNodes.forEach(node => { dataBought[node.label] = IdentityDag.dfs(sellerTree, node.label) })        
         return dataBought
     }
 

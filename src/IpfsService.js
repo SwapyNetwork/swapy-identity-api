@@ -116,9 +116,7 @@ class IpfsService {
     async searchNode(ipfsHash, search, fetchData = false, privateKey = null) {
         const tree = await this.getObject(ipfsHash)
         let result = IdentityDag.dfs(tree, search)
-        if(result && fetchData) {
-            result = await this.fetchNodeData(result, privateKey)
-        }
+        if(result && fetchData) result = await this.fetchNodeData(result, privateKey)
         return result
     }
   
