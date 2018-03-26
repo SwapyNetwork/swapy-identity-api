@@ -1,5 +1,7 @@
 import { IdentityDag } from './IdentityDag'
 import { MultiHash } from './utils/MultiHash'
+import * as crypto from 'crypto-browserify'
+import { sha3_256 } from 'js-sha3'
 import { default as ipfsAPI} from 'ipfs-api'
 import EthCrypto from 'eth-crypto'
 
@@ -162,7 +164,7 @@ class IpfsService {
      * @param   {Object}     node                   node object   
      * @param   {Object}     insertion              node to be saved       
      * @param   {String}     insertion.parentLabel  insertion parent label  
-     * @param   {String}     insertion.hash         insertion hash or   
+     * @param   {String}     insertion.data         insertion data 
      * @param   {Object[]}   insertion.childrens    insertion childrens. Same structure of "insertion"
      * @param   {String}     parentLabel            overrides the insertion parent 
      * @returns {Object}                            node object
@@ -170,19 +172,19 @@ class IpfsService {
     async handleInsertion(node, insertion, publicKey, parentLabel) {
         parentLabel = parentLabel ? parentLabel : insertion.parentLabel
         let data = null
+        let dataHash = null
         let childrens = null
         if(!(insertion.childrens && insertion.childrens.length > 0)){
             if(insertion.data) {
-                console.log(insertion.label)
-                console.log(insertion.data)
-                console.log(publicKey)
-                data = JSON.stringify(await EthCrypto.encryptWithPublicKey(publicKey, insertion.data))
-                console.log(data)
+                const salt = String.fromCharCode.apply(null, crypto.randomBytes(32))
+                const dataPayload = { data : insertion.data, salt }
+                data = await EthCrypto.encryptWithPublicKey(publicKey, JSON.stringify(dataPayload))
+                dataHash = sha3_256(insertion.data+salt)
             }
             childrens = null            
         }
-        if(data) data = await this.saveData(data)
-        IdentityDag.insertNode(node, parentLabel, insertion.label, data)
+        if(data) data = await this.saveObject(data)
+        IdentityDag.insertNode(node, parentLabel, insertion.label, data, dataHash)
         if(insertion.childrens && insertion.childrens.length > 0)
             return await this.handleInsertions(node, insertion.childrens, publicKey, insertion.label)
         return node
@@ -197,10 +199,13 @@ class IpfsService {
     * @returns {String}                            The location of the saved tree on IPFS
     */
     async updateNode(ipfsHash, search, data, publicKey) {
-        data = JSON.stringify(await EthCrypto.encryptWithPublicKey(publicKey, data))
-        const dataIpfsHash = await this.saveData(data)
+        const salt = String.fromCharCode.apply(null, crypto.randomBytes(32))
+        const dataPayload = { data , salt }
+        const encryptedPayload = await EthCrypto.encryptWithPublicKey(publicKey, JSON.stringify(dataPayload))
+        const dataHash = sha3_256(data+salt)
+        const dataIpfsHash = await this.saveObject(encryptedPayload)
         const tree = await this.getObject(ipfsHash)
-        IdentityDag.updateNode(tree, search, dataIpfsHash)
+        IdentityDag.updateNode(tree, search, dataIpfsHash, dataHash)
         return await this.saveObject(tree)
     }
 
@@ -230,9 +235,14 @@ class IpfsService {
                 promises.push(this.fetchNodeData(node.childrens[i], privateKey))
             }
             return Promise.all(promises).then(data => { return node })
-        }else if(node.hash){
-            node.hash = await this.getObject(node.hash)
-            if(privateKey) node.hash = await EthCrypto.decryptWithPrivateKey(privateKey, node.hash) 
+        }else if(node.data){
+            console.log(node.data)
+            const encryptedData = await this.getObject(node.data)
+            if(privateKey) {
+                const dataPayload = JSON.parse(await EthCrypto.decryptWithPrivateKey(privateKey, encryptedData))
+                node.data = dataPayload.data
+                node.salt = dataPayload.salt
+            } 
         }
         return node
     }

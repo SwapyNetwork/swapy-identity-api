@@ -19,9 +19,9 @@ class IdentityDag {
     * @param   {String}         hash         new node's data
     * @return  {Object}                      the target node with the new node if the parent exists                                              
     */
-    static insertNode(node, parentLabel, label, hash) {
+    static insertNode(node, parentLabel, label, data, hash) {
         if(node.label === parentLabel) {
-            const newNode = { label, hash }
+            const newNode = { label, data, hash }
             if(node.childrens && node.childrens.length > 0) node.childrens.push(newNode)
             else node.childrens = [newNode]
             node = renewNodeHash(node)
@@ -29,7 +29,7 @@ class IdentityDag {
         }
         else if(node.childrens && node.childrens.length > 0) {
             for(let i = 0; i < node.childrens.length; i++){
-                let result = this.insertNode(node.childrens[i], parentLabel, label, hash)
+                let result = this.insertNode(node.childrens[i], parentLabel, label, data, hash)
                 if(result) {
                     node = renewNodeHash(node)
                     return node
@@ -64,9 +64,10 @@ class IdentityDag {
     * @param   {String}         search       target node's label
     * @return  {Object}                      the desired node with its childrens if it exists                                              
     */
-    static updateNode(node, search, data) {
+    static updateNode(node, search, data, hash) {
         if(node.label === search && (!node.childrens || node.childrens.length === 0)) {
-            node.hash = data;
+            node.data = data;
+            node.hash = hash;
             return node
         }
         else if(node.childrens && node.childrens.length > 0) {

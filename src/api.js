@@ -69,11 +69,11 @@ class Api {
     * @param       {String}                   opt.from          set the tx sender
     * @return      {Promise<Object, Error>}                     A promise that resolves with the transaction object or rejects with an error                             
     */
-    async createPersonalIdentity(identityId, profileDataNodes = [], pubKey = null, opt = { from: null, gas: null, gasPrice: null }) {
+    async createPersonalIdentity(identityId, profileDataNodes = [], publicKey = null, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        const profileHash = await this.ipfsService.initTree(profileDataNodes, pubKey)
+        const profileHash = await this.ipfsService.initTree(profileDataNodes, publicKey)
         return this.IdentityProtocolContract.methods
         .createPersonalIdentity(this.utils.asciiToHex(identityId),this.utils.asciiToHex(profileHash))
         .send({ from, gas, gasPrice })
@@ -92,11 +92,11 @@ class Api {
     * @param   {String}                  opt.gasPrice      set the tx gas price in gwei
     * @return  {Promise<Object, Error>}                    A promise that resolves with the transaction object or rejects with an error                          
     */
-    async createMultiSigIdentity(identityId, owners, required, profileDataNodes = [], pubKey = null, opt = { from: null, gas: null, gasPrice: null }) {
+    async createMultiSigIdentity(identityId, owners, required, profileDataNodes = [], publicKey = null, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        const profileHash = await this.ipfsService.initTree(profileDataNodes, pubKey)
+        const profileHash = await this.ipfsService.initTree(profileDataNodes, publicKey)
         return this.IdentityProtocolContract.methods
         .createMultiSigIdentity(this.utils.asciiToHex(identityId),this.utils.asciiToHex(profileHash), owners, required)
         .send({ from, gas, gasPrice })
@@ -280,9 +280,25 @@ class Api {
         const sellerTree = await this.getProfileData(identity, true, privateKey)
         saleNodes.map(node => { 
             let treeNode = IdentityDag.dfs(sellerTree, node.label) 
-            node.data = treeNode.hash
+            node.data = treeNode.data
+            node.salt = treeNode.salt
         })
-        return QRCode.getQRUri(JSON.stringify({ identity, saleNodes, publicKey, price }))
+        // --- Correct Implementation
+        return QRCode.getQRUri(JSON.stringify({ identity, saleNodes, price }))
+        // --- Test Implementation
+        //return { identity, saleNodes, price }
+    }
+
+    async checkDataTruth(identity, nodes) {
+        const encryptedTree = await this.getProfileData(identity, true)
+        let validations = { error : [], success : [] }
+        nodes.forEach( node => { 
+            let treeNode = IdentityDag.dfs(encryptedTree, node.label)
+            const nodeHash = sha3_256(node.data+node.salt)
+            if(nodeHash == treeNode.hash) validations.success.push({label: node.label, data: node.data})
+            else validations.error.push({label: node.label, message: 'Wrong data or salt' })
+        })
+        return validations
     }
 
     /**
@@ -293,10 +309,11 @@ class Api {
     * @param   {Object[]}    saleNodes        List of nodes to be selled 
     * @param   {String}      saleNodes.label  Node label
     * @param   {String}      saleNodes.data   Node data
+    * @param   {String}      saleNodes.salt   Node hash's salt
     * @param   {Integer}     price            Sale price. 
     * @return  {Object}                       Data bought                          
     */
-    async buyIdentityData(identity, seller, saleNodes, publicKey, price, opt = {
+    async buyIdentityData(identity, seller, saleNodes, price, opt = {
         from: null, gas: null, gasPrice: null 
     }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
@@ -306,24 +323,10 @@ class Api {
             const txData = this.TokenContract.methods.transfer(seller, price).encodeABI()
             await this.forwardTransaction(identity, this.TokenContract.options.address, 0, 0, txData)
         }
-        const encryptedTree = await this.getProfileData(seller, true)
-        let dataBought = {}
-        let promises = []
-        saleNodes.forEach( async node => { 
-            promises.push(this.setBoughtData(encryptedTree, node, publicKey, dataBought))
-        })
-        return Promise.all(promises).then((data) => { console.log(data) })
-    }
+        return await this.checkDataTruth(seller, saleNodes)
 
-    async setBoughtData(encryptedTree, boughtNode, publicKey, result) {
-        let treeNode = IdentityDag.dfs(encryptedTree, boughtNode.label)
-        const boughtNodeData = await EthCrypto.encryptWithPublicKey(publicKey, boughtNode.data)
-        if(sha3_256(JSON.stringify(boughtNodeData)) == sha3_256(JSON.stringify(treeNode.hash))){
-            result[boughtNode.label] = boughtNode
-        }
-        return result
     }
-
+    
    /**
     * Signs a multi sig transaction.
     *
@@ -385,21 +388,21 @@ class Api {
     * @param   {String}                 opt.from          set the tx sender
     * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
     */
-    async insertProfileData(profileNodes, identity, pubKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
+    async insertProfileData(profileNodes, identity, publicKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         if(!multiSig) {
             this.IdentityContract.options.address = identity
             const profileHash = await this.IdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes, pubKey)
+            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes, publicKey)
             return this.IdentityContract.methods
             .setFinancialData(this.utils.asciiToHex(newHash))
             .send({ from, gas, gasPrice })
         }else{
             this.MultiSigIdentityContract.options.address = identity
             const profileHash = await this.MultiSigIdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes, pubKey)
+            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes, publicKey)
             const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(newHash)).encodeABI()
             return this.MultiSigIdentityContract.methods
             .addTransaction(identity, 0, txData)
@@ -417,21 +420,21 @@ class Api {
     * @param   {String}                 opt.from          set the tx sender
     * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
     */
-    async updateProfileData(nodeLabel, data, identity, pubKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
+    async updateProfileData(nodeLabel, data, identity, publicKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         if(!multiSig) {
             this.IdentityContract.options.address = identity
             const profileHash = await this.IdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data, pubKey)
+            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data, publicKey)
             return this.IdentityContract.methods
             .setFinancialData(this.utils.asciiToHex(newHash))
             .send({ from, gas, gasPrice })
         }else{
             this.MultiSigIdentityContract.options.address = identity
             const profileHash = await this.MultiSigIdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data, pubKey)
+            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data, publicKey)
             const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(newHash)).encodeABI()
             return this.MultiSigIdentityContract.methods
             .addTransaction(identity, 0, txData)
