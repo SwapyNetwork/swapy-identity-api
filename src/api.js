@@ -15,15 +15,20 @@ const Identity = require('./contracts/abi/Identity.json')
 const MultiSigIdentity = require('./contracts/abi/MultiSigIdentity.json')
 const Token = require('./contracts/abi/Token.json')
 
+/**
+ * Exposes methods to interact with Swapy Identities or create them 
+ * 
+ * @class Api
+ */
 class Api {
 
-   /**
-    * Initializes web3, wallet, contracts and IPFS's connection.
-    *
-    * @param    {String}  httpProvider  ethereum http provider
-    * @param    {String}  privateKey    default account's private key
-    * @param    {String}  _networkName  ethereum network name ropsten/rinkeby/ganache
-    */
+    /**
+     * Creates an instance of Api with the ethereum http provider, default account and ethereum network
+     * @param {String} httpProvider                     ethereum http provider
+     * @param {String} [privateKey=null]                default account's private key
+     * @param {String} [_networkName=DEFAULT_NETWORK]   ethereum network name ropsten/rinkeby/ganache
+     * @memberof Api
+     */
     constructor( httpProvider, privateKey = null, _networkName = DEFAULT_NETWORK) {
         this.ipfsService = new IpfsService(ipfsProvider.host, ipfsProvider.port, ipfsProvider.protocol)
         this.web3Service = new Web3Service(httpProvider)
@@ -37,38 +42,47 @@ class Api {
         this.utils = this.web3Service.utils
     }
 
-   /**
-    * Adds a new account to the local wallet.
-    *
-    * @param   {String}                 privateKey   account's private key 
-    */
+    /**
+     * Adds a new account to the local wallet.
+     * 
+     * @param {String} privateKey  account's private key
+     * @memberof Api
+     */
     async addAccountFromPrivateKey(privateKey) {
         const account = this.web3Service.privateKeyToAccount(privateKey)
         this.web3Service.addAccount(account)
     }
-   /**
-    * Gets web3 instance.
-    *
-    * @return  {Object}  Web3 object                          
-    */
+                          
+    /**
+     * Gets web3 instance.
+     * 
+     * @returns  {Object}  Web3 object
+     * @memberof Api
+     */
     getWeb3() { return this.web3Service.getWeb3() }
-
-   /**
-    * Returns the protocol address.
-    *
-    * @return  {String}  IdentityProtocol contract's address                          
-    */
+                           
+    /**
+     * Returns the protocol address.
+     * 
+     * @returns  {String}  IdentityProtocol contract's address
+     * @memberof Api
+     */
     getProtocolAddress() { return this.IdentityProtocolContract.options.address }
 
-   /**
-    * Instantiates a new personal identity.
-    *
-    * @param       {String}                   identityId        An arbitrary index to identify the Identity
-    * @param       {Object[]}                 profileDataNodes  Profile's tree nodes for insertion on IPFS
-    * @param       {Object}                   opt               options
-    * @param       {String}                   opt.from          set the tx sender
-    * @return      {Promise<Object, Error>}                     A promise that resolves with the transaction object or rejects with an error                             
-    */
+                 
+    /**
+     * Instantiates a new personal identity.
+     * 
+     * @param   {String}                    identityId                                           An arbitrary index to identify the Identity
+     * @param   {Object[]}                  [profileDataNodes=[]]                                Profile's tree nodes for insertion on IPFS   
+     * @param   {String}                    [publicKey=null]                                     User's public key. Used to encrypt his data
+     * @param   {Object}                    [opt={ from: null, gas: null, gasPrice: null }]      transaction options
+     * @param   {String}                    opt.from                                             set the tx sender
+     * @param   {Number}                    opt.gas                                              set the tx gas limit
+     * @param   {String}                    opt.gasPrice                                         set the tx gas price in gwei
+     * @returns {Promise<Object, Error>}                                                         A promise that resolves with the transaction object or rejects with an error
+     * @memberof Api
+     */
     async createPersonalIdentity(identityId, profileDataNodes = [], publicKey = null, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
@@ -79,19 +93,21 @@ class Api {
         .send({ from, gas, gasPrice })
     }
 
-   /**
-    * Instantiates a new multi signature identity.
-    *
-    * @param   {String}                  identityId        An arbitrary index to identify the Identity 
-    * @param   {String}                  profileDataNodes  the profile data location on IPFS
-    * @param   {String[]}                owners            multi sig owners list
-    * @param   {Integer}                 required          the required number of signatures 
-    * @param   {Object}                  opt               options
-    * @param   {String}                  opt.from          set the tx sender
-    * @param   {Number}                  opt.gas           set the tx gas limit
-    * @param   {String}                  opt.gasPrice      set the tx gas price in gwei
-    * @return  {Promise<Object, Error>}                    A promise that resolves with the transaction object or rejects with an error                          
-    */
+    /**
+     * Instantiates a new multi signature identity.
+     * 
+     * @param   {String}                 identityId                                           An arbitrary index to identify the Identity   
+     * @param   {String[]}               owners                                               multi sig owners list  
+     * @param   {Integer}                required                                             the required number of signatures   
+     * @param   {Object[]}               [profileDataNodes=[]]                                Profile's tree nodes for insertion on IPFS
+     * @param   {String}                 [publicKey=null]                                     User's public key. Used to encrypt his data  
+     * @param   {Object}                 [opt={ from: null, gas: null, gasPrice: null }]      transaction options
+     * @param   {String}                 opt.from                                             set the tx sender
+     * @param   {Number}                 opt.gas                                              set the tx gas limit
+     * @param   {String}                 opt.gasPrice                                         set the tx gas price in gwei 
+     * @returns {Promise<Object, Error>}                                                      A promise that resolves with the transaction object or rejects with an error 
+     * @memberof Api
+     */
     async createMultiSigIdentity(identityId, owners, required, profileDataNodes = [], publicKey = null, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
@@ -102,22 +118,24 @@ class Api {
         .send({ from, gas, gasPrice })
     }
 
-   /**
-    * Return all the identities created.
-    *
-    * @return  {Object[]}  An array with the past events                          
-    */
+    /**
+     * Return all the identities created.
+     * 
+     * @returns  {Object[]}  An array with the past events
+     * @memberof Api
+     */
     async getIdentities() {
         const logs = await this.IdentityProtocolContract.getPastEvents('IdentityCreated', { fromBlock: 0 })
         return logs
     }
 
-   /**
-    * Retrieves identity's address by its unique ID.
-    * 
-    * @param   {String}                     identityId    Identity's unique ID 
-    * @return  {String}  Identity address                          
-    */
+    /**
+     * Retrieves identity's address by its unique ID.
+     * 
+     * @param    {String}  identityId   Identity's unique ID 
+     * @returns  {String}               Identity address
+     * @memberof Api
+     */
     async getIdentityById(identityId) {
         const identityAddress = await this.IdentityProtocolContract.methods
             .getIdentity(this.utils.asciiToHex(identityId))
@@ -127,8 +145,10 @@ class Api {
     
     /**
      * Creates a random seed and hash it
-     * @param   {Boolean}  QRencode  generate a QRCode with the hashed seed
-     * @returns                      Random hash     
+     * 
+     * @param   {boolean} [QRencode=false]  generate a QRCode with the hashed seed
+     * @returns                             Random hash
+     * @memberof Api
      */
     async getSeed(QRencode = false) {
         const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
@@ -142,28 +162,29 @@ class Api {
         
     }
 
-    
     /**
-     * Creates a pooling for the Identity attestation  
+     * Creates a pooling for the Identity attestation
      * 
      * @param   {String}     identity    Identity's address
      * @param   {String}     seed        auth seed
-     * @param   {String}     expDate     credential's expiration timestamp
      * @param   {Boolean}    authorized  Identity's attestation 
+     * @memberof Api
      */
     async authPooling(identity, seed, authorized) {
         const watcher = setTimeout( async () => {
             authorized = await this.isAuthorized(identity, seed)
-            if(!authorized) await watchCredentials(identity, seed, expDate, authorized)
+            if(!authorized) await watchCredentials(identity, seed, authorized)
         },2000)
     }
 
     /**
      * Watch for Identity's credential attestation
      * 
-     * @param   {String}     identity    Identity's address
-     * @param   {String}     seed        auth seed 
-     * @param   {Boolean}    authorized  Identity's attestation 
+     * @param   {String}     identity           Identity's address
+     * @param   {String}     seed               auth seed
+     * @param   {Boolean}    [authorized=false] Identity's attestation
+     * @returns {Boolean}                       Identity is attested
+     * @memberof Api
      */
     async watchCredentials(identity, seed, authorized = false){
         if(!authorized) authPooling(identity, seed, authorized)
@@ -174,7 +195,8 @@ class Api {
      *
      * @param   {String}     identity    Identity's address
      * @param   {String}     seed        auth seed
-     * 
+     * @returns {Boolean}                Identity is attested
+     * @memberof Api
      */ 
     async isAuthorized(identity, seed) {
         let authorized = false
@@ -195,22 +217,23 @@ class Api {
     /**
      * Sets Identity's credentials
      * 
-     * @param   {String}  identity
-     * @param   {String}  seed
-     *      
+     * @param    {String}    seed  auth seed
+     * @returns  {Promise}         A promise to insert the Credentials on IPFS 
+     * @memberof Api
      */
     async setCredentials(seed) {
         const authSignature = await this.web3Service.signCredentials(seed)
         return await this.ipfsService.setAuthCredentials(seed, authSignature)
     }
 
-   /**
-    * Returns Identity's transactions.
-    *
-    * @param   {String}    identity   the profile data location on IPFS
-    * @param   {Boolean}   multisig   multi sign transactions or not 
-    * @return  {Object[]}             An array with the past events                          
-    */
+    /**
+     * Returns Identity's transactions.
+     * 
+     * @param   {String}   identity         the profile data location on IPFS
+     * @param   {boolean}  [multiSig=false] multi sign transactions or not
+     * @returns {Object[]}                  An array with the past events
+     * @memberof Api
+     */
     async getTransactions(identity, multiSig = false) {
         let logs
         if(!multiSig){
@@ -223,18 +246,22 @@ class Api {
         return logs
     }
 
-   /**
-    * Creates a new transaction.
-    *
-    * @param   {String}                 identity     identity's contract address 
-    * @param   {String}                 destination  destination address 
-    * @param   {Integer}                value        tx value
-    * @param   {Integer}                funding      internal funding identity
-    * @param   {String}                 data         tx data  
-    * @param   {Object}                 opt          options
-    * @param   {String}                 opt.from     set the tx sender
-    * @return  {Promise<Object, Error>}              A promise that resolves with the transaction object or rejects with an error                          
-    */
+    /**
+     * Creates a new transaction.
+     * 
+     * @param   {String}                 identity                                          identity's contract address 
+     * @param   {String}                 destination                                       destination address 
+     * @param   {Integer}                value                                             tx value
+     * @param   {Integer}                funding                                           internal funding identity
+     * @param   {String}                 data                                              tx data  
+     * @param   {boolean}                [multiSig=false]                                  multi sig wallet
+     * @param   {Object}                 [opt={ from: null, gas: null, gasPrice: null }]   transaction options
+     * @param   {String}                 opt.from                                          set the tx sender
+     * @param   {Number}                 opt.gas                                           set the tx gas limit
+     * @param   {String}                 opt.gasPrice                                      set the tx gas price in gwei  
+     * @returns {Promise<Object, Error>}                                                   A promise that resolves with the transaction object or rejects with an error 
+     * @memberof Api
+     */
     async forwardTransaction(identity, destination, value, funding, data, multiSig = false, opt = {
         from: null, gas: null, gasPrice: null 
     }) {
@@ -254,28 +281,32 @@ class Api {
         }
 
     }
-
-   /**
-    * Returns Identity's token balance.
-    *
-    * @param   {String}    identity   the identity address
-    * @return  {Integer}              Identity's token balance
-    */
+      
+    /**
+     * Returns Identity's token balance.
+     * 
+     * @param    {String}  identity   Identity's contract address
+     * @returns  {Integer}            Identity's token balance
+     * @memberof Api
+     */
     async getTokenBalance(identity) {
         return await this.TokenContract.methods.balanceOf(identity).call()
     }
 
+                       
     /**
-    * Creates a sell transaction for identity's data 
-    *
-    * @param   {String}      identity         identity's contract address 
-    * @param   {Object[]}    saleNodes        List of nodes to be selled 
-    * @param   {String}      saleNodes.label  Node label
-    * @param   {Integer}     saleNodes.price  Node price
-    * @param   {Integer}     price            Sale total price. Overrided by node's prices if it's null
-    * @return  {String}                       QRcode image uri                          
-    */
-    async sellIdentityData(identity, saleNodes, privateKey, publicKey, price = 0) {
+     * Creates a sell transaction for identity's data 
+     * 
+     * @param   {String}   identity            identity's contract address  
+     * @param   {Object[]} saleNodes           List of nodes to be sold 
+     * @param   {String}   saleNodes.label     Node label
+     * @param   {Integer}  saleNodes.price     Node price
+     * @param   {String}   privateKey          User's private key. Used to decrypt his data 
+     * @param   {Integer}  [price=0]           Sale total price. Overrided by node's prices if it's null  
+     * @returns {String}                       QRcode image uri
+     * @memberof Api
+     */
+    async sellIdentityData(identity, saleNodes, privateKey, price = 0) {
         if(!price) saleNodes.forEach(node => {  price += parseInt(node.price) })
         const sellerTree = await this.getProfileData(identity, true, privateKey)
         saleNodes.map(node => { 
@@ -289,6 +320,17 @@ class Api {
         //return { identity, saleNodes, price }
     }
 
+    /**
+     * Checks the data truth according to identity's real data 
+     * 
+     * @param   {String}      identity         identity's contract address 
+     * @param   {Object[]}    nodes            List of nodes to be checked 
+     * @param   {String}      nodes.label      Node label
+     * @param   {String}      nodes.data       Node data
+     * @param   {String}      nodes.salt       Node hash's salt 
+     * @returns {Object}                       An object with errors and successes
+     * @memberof Api
+     */
     async checkDataTruth(identity, nodes) {
         const encryptedTree = await this.getProfileData(identity, true)
         let validations = { error : [], success : [] }
@@ -302,17 +344,22 @@ class Api {
     }
 
     /**
-    * Transfer tokens and retrieve the data bought
-    *
-    * @param   {String}      identity         Buyer Identity's contract address 
-    * @param   {String}      seller           Seller Identity's contract address
-    * @param   {Object[]}    saleNodes        List of nodes to be selled 
-    * @param   {String}      saleNodes.label  Node label
-    * @param   {String}      saleNodes.data   Node data
-    * @param   {String}      saleNodes.salt   Node hash's salt
-    * @param   {Integer}     price            Sale price. 
-    * @return  {Object}                       Data bought                          
-    */
+     * Transfer tokens and retrieve the data bought
+     * 
+     * @param   {String}    identity                                          Buyer Identity's contract address 
+     * @param   {String}    seller                                            Seller Identity's contract address
+     * @param   {Object[]}  saleNodes                                         List of nodes to be selled 
+     * @param   {String}    saleNodes.label                                   Node label
+     * @param   {String}    saleNodes.data                                    Node data
+     * @param   {String}    saleNodes.salt                                    Node hash's salt
+     * @param   {Integer}   price                                             Sale price. 
+     * @param   {Object}    [opt={ from: null, gas: null, gasPrice: null }]   transaction options
+     * @param   {String}    opt.from                                          set the tx sender
+     * @param   {Number}    opt.gas                                           set the tx gas limit
+     * @param   {String}    opt.gasPrice                                      set the tx gas price in gwei
+     * @returns {Object}                                                      Data bought 
+     * @memberof Api
+     */
     async buyIdentityData(identity, seller, saleNodes, price, opt = {
         from: null, gas: null, gasPrice: null 
     }) {
@@ -324,18 +371,20 @@ class Api {
             await this.forwardTransaction(identity, this.TokenContract.options.address, 0, 0, txData)
         }
         return await this.checkDataTruth(seller, saleNodes)
-
     }
     
-   /**
-    * Signs a multi sig transaction.
-    *
-    * @param   {String}                 identity         identity's contract address 
-    * @param   {Integer}                transactionId    transaction's index 
-    * @param   {Object}                 opt              options
-    * @param   {String}                 opt.from         set the tx sender
-    * @return  {Promise<Object, Error>}                  A promise that resolves with the transaction object or rejects with an error                          
-    */
+    /**
+     * Signs a multi sig transaction.
+     * 
+     * @param   {String}    identity                                          identity's contract address 
+     * @param   {Integer}   transactionId                                     transaction's index 
+     * @param   {Object}    [opt={ from: null, gas: null, gasPrice: null }]   transaction options
+     * @param   {String}    opt.from                                          set the tx sender
+     * @param   {Number}    opt.gas                                           set the tx gas limit
+     * @param   {String}    opt.gasPrice                                      set the tx gas price in gwei 
+     * @returns {Promise<Object, Error>}                                      A promise that resolves with the transaction object or rejects with an error
+     * @memberof Api
+     */
     signTransaction (identity, transactionId, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
@@ -346,14 +395,16 @@ class Api {
         .send({ from, gas, gasPrice })
     }
 
-   /**
-    * Executes a multi sig transaction.
-    *
-    * @param   {String}                 identity         identity's contract address 
-    * @param   {Integer}                transactionId    transaction's index 
-    * @param   {Object}                 opt              options
-    * @param   {String}                 opt.from         set the tx sender
-    * @return  {Promise<Object, Error>}                  A promise that resolves with the transaction object or rejects with an error                          
+    /**
+     * Executes a multi sig transaction.
+     *
+     * @param   {String}    identity                                          identity's contract address 
+     * @param   {Integer}   transactionId                                     transaction's index 
+     * @param   {Object}    [opt={ from: null, gas: null, gasPrice: null }]   transaction options
+     * @param   {String}    opt.from                                          set the tx sender
+     * @param   {Number}    opt.gas                                           set the tx gas limit
+     * @param   {String}    opt.gasPrice                                      set the tx gas price in gwei 
+     * @returns {Promise<Object, Error>}                                      A promise that resolves with the transaction object or rejects with an error                          
     */
     executeTransaction(identity, transactionId, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
@@ -365,29 +416,36 @@ class Api {
         .send({ from, gas, gasPrice })
     }
 
-   /**
-    * Returns the profile data of an identity
-    *
-    * @param   {String}                 identity   identity's contract address 
-    * @param   {Boolean}                fetchData  retrieve leafs data or not 
-    * @return  {Promise<Object, Error>}            A promise that resolves with the transaction object or rejects with an error                          
-    */
+    /**
+     * Returns the profile data of an identity
+     * 
+     * @param    {String}  identity              identity's contract address
+     * @param    {Boolean} [fetchData=false]     retrieve leafs data or not
+     * @param    {String}  [privateKey=null]     User's private key. Used to decrypt his data 
+     * @returns  {Promise<Object, Error>}        A promise that resolves with the transaction object or rejects with an error
+     * @memberof Api
+     */
     async getProfileData(identity, fetchData = false, privateKey = null) {
         this.IdentityContract.options.address = identity
         const profileHash = await this.IdentityContract.methods.financialData().call()
         const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash), 'root', fetchData, privateKey)
         return tree           
     } 
-   /**
-    * Sets a new profile data
-    *
-    * @param   {Object[]}               profileNodes      Identity's tree nodes to be inserted 
-    * @param   {String}                 identity          the identity's contract address
-    * @param   {Boolean}                multiSig          is a multi sig identity  
-    * @param   {Object}                 opt               options
-    * @param   {String}                 opt.from          set the tx sender
-    * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
-    */
+                            
+    /**
+     * Sets a new profile data
+     * 
+     * @param    {Object[]}   profileNodes                                     Identity's tree nodes to be inserted
+     * @param    {String}     identity                                         the identity's contract address             
+     * @param    {String}     publicKey                                        User's public key. Used to encrypt the data
+     * @param    {Boolean}    [multiSig=false]                                 is a multi sig identity 
+     * @param    {Object}     [opt={ from: null, gas: null, gasPrice: null }]  transaction options
+     * @param    {String}     opt.from                                         set the tx sender
+     * @param    {Number}     opt.gas                                          set the tx gas limit
+     * @param    {String}     opt.gasPrice                                     set the tx gas price in gwei 
+     * @returns  {Promise<Object, Error>}                                      A promise that resolves with the transaction object or rejects with an error
+     * @memberof Api
+     */
     async insertProfileData(profileNodes, identity, publicKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
@@ -410,16 +468,21 @@ class Api {
         }
     }
 
-   /**
-    * Sets a new profile data
-    *
-    * @param   {Object}                 profileNodes      Identity's tree nodes to be inserted 
-    * @param   {String}                 identity          the identity's contract address
-    * @param   {Boolean}                multiSig          is a multi sig identity  
-    * @param   {Object}                 opt               options
-    * @param   {String}                 opt.from          set the tx sender
-    * @return  {Promise<Object, Error>}                   A promise that resolves with the transaction object or rejects with an error                          
-    */
+    /**
+     * Updates profile's data
+     * 
+     * @param   {String}  nodeLabel                                        Label of the node to be updated 
+     * @param   {String}  data                                             New data
+     * @param   {String}  identity                                         Identity's contract address 
+     * @param   {String}  publicKey                                        User's public key. Used to encrypt the data  
+     * @param   {Boolean} [multiSig=false]                                 is a multi sig identity
+     * @param   {Object}  [opt={ from: null, gas: null, gasPrice: null }]  transaction options
+     * @param   {String}  opt.from                                         set the tx sender
+     * @param   {Number}  opt.gas                                          set the tx gas limit
+     * @param   {String}  opt.gasPrice                                     set the tx gas price in gwei 
+     * @returns {Promise<Object, Error>}                                   A promise that resolves with the transaction object or rejects with an error 
+     * @memberof Api
+     */
     async updateProfileData(nodeLabel, data, identity, publicKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
@@ -442,15 +505,18 @@ class Api {
         }
     }
 
-   /**
-    * Adds a new multi sig owner
-    *
-    * @param   {String}                 identity  Identity's contract address 
-    * @param   {String}                 newOwner  Wallet address 
-    * @param   {Object}                 opt       options
-    * @param   {String}                 opt.from  set the tx sender
-    * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
-    */
+    /**
+     * Adds a new multi sig owner
+     * 
+     * @param   {String}  identity                                         Identity's contract address  
+     * @param   {String}  newOwner                                         Wallet Address 
+     * @param   {Object}  [opt={ from: null, gas: null, gasPrice: null }]  transaction options  
+     * @param   {String}  opt.from                                         set the tx sender
+     * @param   {Number}  opt.gas                                          set the tx gas limit
+     * @param   {String}  opt.gasPrice                                     set the tx gas price in gwei 
+     * @returns {Promise<Object, Error>}                                   A promise that resolves with the transaction object or rejects with an error
+     * @memberof Api
+     */
     addOwner(identity, newOwner, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
@@ -462,15 +528,18 @@ class Api {
         .send({ from, gas, gasPrice })
     }
 
-   /**
-    * Removes a multi sig owner
-    *
-    * @param   {String}                 identity  Identity's contract address 
-    * @param   {String}                 oldOwner  Wallet address 
-    * @param   {Object}                 opt       options
-    * @param   {String}                 opt.from  set the tx sender
-    * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
-    */
+    /**
+     * Removes a multi sig owner
+     * 
+     * @param   {String}  identity                                         Identity's contract address  
+     * @param   {String}  oldOwner                                         Wallet Address 
+     * @param   {Object}  [opt={ from: null, gas: null, gasPrice: null }]  transaction options  
+     * @param   {String}  opt.from                                         set the tx sender
+     * @param   {Number}  opt.gas                                          set the tx gas limit
+     * @param   {String}  opt.gasPrice                                     set the tx gas price in gwei 
+     * @returns {Promise<Object, Error>}                                   A promise that resolves with the transaction object or rejects with an error
+     * @memberof Api
+     */
     removeOwner(identity, oldOwner, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
@@ -482,15 +551,18 @@ class Api {
         .send({ from, gas, gasPrice })
     }
     
-   /**
-    * Changes the required number of signatures
-    *
-    * @param   {String}                 identity  Identity's contract address 
-    * @param   {String}                 required  new requirement 
-    * @param   {Object}                 opt       options
-    * @param   {String}                 opt.from  set the tx sender
-    * @return  {Promise<Object, Error>}           A promise that resolves with the transaction object or rejects with an error                          
-    */
+    /**
+     * Changes the required number of signatures
+     * 
+     * @param   {String}  identity                                         Identity's contract address  
+     * @param   {String}  required                                         new requirement  
+     * @param   {Object}  [opt={ from: null, gas: null, gasPrice: null }]  transaction options  
+     * @param   {String}  opt.from                                         set the tx sender
+     * @param   {Number}  opt.gas                                          set the tx gas limit
+     * @param   {String}  opt.gasPrice                                     set the tx gas price in gwei 
+     * @returns {Promise<Object, Error>}                                   A promise that resolves with the transaction object or rejects with an error 
+     * @memberof Api
+     */
     changeRequired(identity, required, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
