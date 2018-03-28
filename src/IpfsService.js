@@ -14,7 +14,7 @@ class IpfsService {
     * @param   {String}         protocol  host protocol http/https
     */
     constructor(host, port, protocol){
-        this.ipfs = ipfsAPI({host, port, protocol})
+        this.ipfs = ipfsAPI(host, port, { protocol })
     }
 
    /**
