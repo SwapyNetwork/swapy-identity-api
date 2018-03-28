@@ -1,11 +1,9 @@
 import * as Moment from 'moment'
-import * as crypto from 'crypto-browserify'
-import { sha3_256 } from 'js-sha3'
-import EthCrypto from 'eth-crypto'
 import { IpfsService } from './IpfsService'
 import { IdentityDag } from './IdentityDag'
 import { Web3Service } from './Web3Service'
 import { QRCode } from './utils/QRCode'
+import { Crypto } from './utils/Crypto'
 import { ethAddresses, DEFAULT_NETWORK } from './config/ethereum'
 import { ipfsProvider } from './config/ipfs'
 
@@ -151,8 +149,8 @@ class Api {
      * @memberof Api
      */
     async getSeed(QRencode = false) {
-        const randomSeed = `${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}${crypto.randomBytes(4)}`
-        const seedHash = sha3_256(randomSeed)
+        const randomSeed = `${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}`
+        const seedHash = Crypto.sha3_256(randomSeed)
         const ipfsSuccess = await this.ipfsService.initAuth(seedHash)
         if(ipfsSuccess) {
             let authObject = { seed : seedHash }
@@ -336,7 +334,7 @@ class Api {
         let validations = { error : [], success : [] }
         nodes.forEach( node => { 
             let treeNode = IdentityDag.dfs(encryptedTree, node.label)
-            const nodeHash = sha3_256(node.data+node.salt)
+            const nodeHash = Crypto.sha3_256(node.data+node.salt)
             if(nodeHash == treeNode.hash) validations.success.push({label: node.label, data: node.data})
             else validations.error.push({label: node.label, message: 'Wrong data or salt' })
         })

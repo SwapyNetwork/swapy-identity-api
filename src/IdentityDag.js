@@ -1,4 +1,4 @@
-import { sha3_256 } from 'js-sha3'
+import { Crypto } from './utils/Crypto'
 
 class IdentityDag {
    /**
@@ -116,7 +116,7 @@ const renewNodeHash = node => {
                 else data = node.childrens[j].hash
             } 
         }
-        if(data) node.hash = sha3_256(data)  
+        if(data) node.hash = Crypto.sha3_256(data)  
     }
     return node
 }

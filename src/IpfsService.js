@@ -1,9 +1,8 @@
+import * as crypto from 'crypto-browserify'
+import { default as ipfsAPI} from 'ipfs-api'
 import { IdentityDag } from './IdentityDag'
 import { MultiHash } from './utils/MultiHash'
-import * as crypto from 'crypto-browserify'
-import { sha3_256 } from 'js-sha3'
-import { default as ipfsAPI} from 'ipfs-api'
-import EthCrypto from 'eth-crypto'
+import { Crypto } from './utils/Crypto'
 
 class IpfsService {
    
@@ -176,10 +175,10 @@ class IpfsService {
         let childrens = null
         if(!(insertion.childrens && insertion.childrens.length > 0)){
             if(insertion.data) {
-                const salt = String.fromCharCode.apply(null, crypto.randomBytes(32))
+                const salt = String.fromCharCode.apply(null, Crypto.randomBytes(32))
                 const dataPayload = { data : insertion.data, salt }
-                data = await EthCrypto.encryptWithPublicKey(publicKey, JSON.stringify(dataPayload))
-                dataHash = sha3_256(insertion.data+salt)
+                data = await Crypto.encrypt(publicKey, JSON.stringify(dataPayload))
+                dataHash = Crypto.sha3_256(insertion.data+salt)
             }
             childrens = null            
         }
@@ -199,10 +198,10 @@ class IpfsService {
     * @returns {String}                            The location of the saved tree on IPFS
     */
     async updateNode(ipfsHash, search, data, publicKey) {
-        const salt = String.fromCharCode.apply(null, crypto.randomBytes(32))
+        const salt = String.fromCharCode.apply(null, Crypto.randomBytes(32))
         const dataPayload = { data , salt }
-        const encryptedPayload = await EthCrypto.encryptWithPublicKey(publicKey, JSON.stringify(dataPayload))
-        const dataHash = sha3_256(data+salt)
+        const encryptedPayload = await Crypto.encrypt(publicKey, JSON.stringify(dataPayload))
+        const dataHash = Crypto.sha3_256(data+salt)
         const dataIpfsHash = await this.saveObject(encryptedPayload)
         const tree = await this.getObject(ipfsHash)
         IdentityDag.updateNode(tree, search, dataIpfsHash, dataHash)
@@ -236,10 +235,9 @@ class IpfsService {
             }
             return Promise.all(promises).then(data => { return node })
         }else if(node.data){
-            console.log(node.data)
             const encryptedData = await this.getObject(node.data)
             if(privateKey) {
-                const dataPayload = JSON.parse(await EthCrypto.decryptWithPrivateKey(privateKey, encryptedData))
+                const dataPayload = JSON.parse(await Crypto.decrypt(privateKey, encryptedData))
                 node.data = dataPayload.data
                 node.salt = dataPayload.salt
             } 
