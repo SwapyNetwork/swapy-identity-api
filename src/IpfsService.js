@@ -77,13 +77,24 @@ class IpfsService {
     * @param   {String}       ipfsHash   The ipfs location       
     * @returns {Promise<String,Error>}   A promise that resolves with the string content or rejects with an error
     */
-    getData(ipfsHash) {
-        return new Promise((resolve, reject) => {
-            this.ipfs.files.get(`/ipfs/${ipfsHash}`, (err, data) => {
-                if(err) reject(err)
-                else resolve(data[0].content.toString())
-            })
-        })
+    // getData(ipfsHash) {
+    //     return new Promise((resolve, reject) => {
+    //         this.ipfs.files.get(`/ipfs/${ipfsHash}`, (err, data) => {
+    //             if(err) reject(err)
+    //             else resolve(data[0].content.toString())
+    //         })
+    //     })
+    // }
+
+    async getData(ipfsHash) {
+        const url = `https://ipfs.swapy.network/${ipfsHash}`
+        try {
+            const response = await fetch(url)
+            const data = await response.json()
+            return JSON.stringify(data)
+        }catch(err){
+            throw(err)
+        }   
     }
 
     /**
@@ -237,7 +248,8 @@ class IpfsService {
         }else if(node.data){
             const encryptedData = await this.getObject(node.data)
             if(privateKey) {
-                const dataPayload = JSON.parse(await Crypto.decrypt(privateKey, encryptedData))
+                const stringPayload = await Crypto.decrypt(privateKey, encryptedData)
+                const dataPayload = JSON.parse(stringPayload)
                 node.data = dataPayload.data
                 node.salt = dataPayload.salt
             } 
