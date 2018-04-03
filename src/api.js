@@ -153,18 +153,23 @@ class Api {
     
     /**
      * Creates a random seed and hash it
-     * 
+     * @param   {Object[]} authNodes        List of requested data 
+     * @param   {String}   authNodes.label  Node label
      * @param   {boolean} [QRencode=false]  generate a QRCode with the hashed seed
      * @returns                             Random hash
      * @memberof Api
      */
-    async getSeed(QRencode = false) {
-        const randomSeed = `${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}`
-        const seedHash = Crypto.sha3_256(randomSeed)
-        const ipfsSuccess = await this.ipfsService.initAuth(seedHash)
+    async initEccAuth(authNodes, QRencode = false) {
+        const eccPair = Crypto.createPublicPrivatePair()
+        const publicKey = eccPair.publicKey
+        const privateKey = eccPair.privateKey
+        const ipfsSuccess = await this.ipfsService.initAuth(publicKey)
         if(ipfsSuccess) {
-            let authObject = { seed : seedHash }
-            if(QRencode) authObject.QRCode = QRCode.getQRUri(seedHash)
+            let authObject = { authNodes, publicKey, privateKey }
+            if(QRencode) {
+                const qrCodeObj = JSON.stringify({publicKey, authNodes})
+                authObject.QRCode = QRCode.getQRUri(qrCodeObj)
+            }
             return authObject
         }else return false
         
@@ -206,34 +211,68 @@ class Api {
      * @returns {Boolean}                Identity is attested
      * @memberof Api
      */ 
-    async isAuthorized(identity, seed) {
-        let authorized = false
+    async isAuthorized(identity, seed, authPrivKey) {
+        let authObject = {
+            authorized : false     
+        }
         const authCredentials = await this.ipfsService.getAuthCredentials(seed)
         if(authCredentials) {
-            const signer = await this.web3Service.getCredentialsSigner(seed, authCredentials)
+            const signer = await this.web3Service.getCredentialsSigner(seed, authCredentials.credentials)
             if(signer) {
                 try {
                     this.IdentityContract.options.address = identity
                     const identityOwner = await this.IdentityContract.methods.owner().call()
-                    authorized = identityOwner == signer
+                    authObject.authorized = identityOwner == signer
+                    const dataKeys = Object.keys(authCredentials.credentialsData)
+                    if(dataKeys.length > 0){
+                        let promises = []
+                        dataKeys.forEach(nodeLabel => {
+                            promises.push(Crypto.decryptEcc(authPrivKey, authCredentials.credentialsData[nodeLabel]))
+                        })
+                        return Promise.all(promises).then(data => {
+                            authObject.data = data
+                            return authObject
+                        })
+                    }
                 }catch(err){}
             } 
         }
-        return authorized        
+        return authObject        
     }
 
     /**
      * Sets Identity's credentials
      * 
-     * @param    {String}    seed  auth seed
-     * @returns  {Promise}         A promise to insert the Credentials on IPFS 
+     * @param    {String}    seed             auth seed
+     * @param    {Object[]}  authNodes        List of requested data 
+     * @param    {String}    authNodes.label  Node label
+     * @returns  {Promise}                    A promise to insert the Credentials on IPFS 
      * @memberof Api
      */
-    async setCredentials(seed) {
+    async setCredentials(identity, seed, privateKey, authNodes = []) {
         const authSignature = await this.web3Service.signCredentials(seed)
-        return await this.ipfsService.setAuthCredentials(seed, authSignature)
+        if(authNodes){
+            const identityTree = await this.getIdentityData(identity, true, privateKey)
+            let credentialsData = {}
+            let promises = []
+            authNodes.map( node => { 
+                promises.push(this.fillCredentialsData(identityTree, seed, node, credentialsData))
+            })
+            Promise.all(promises).then(async() => {
+                return await this.ipfsService.setAuthCredentials(seed, authSignature, credentialsData)
+            })
+        }
+        
+        return await this.ipfsService.setAuthCredentials(seed, authSignature, {})
     }
 
+    async fillCredentialsData(tree, seed, authNode, credentialsData){
+        let treeNode = IdentityDag.dfs(tree, authNode.label)
+        const dataPayload = { data : treeNode.data, salt: treeNode.salt }
+        const data = await Crypto.encryptEcc(seed, JSON.stringify(dataPayload)) 
+        credentialsData[authNode.label] = data
+        return true
+    }
     /**
      * Returns Identity's transactions.
      * 

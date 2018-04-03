@@ -14,6 +14,10 @@ class Crypto {
         return content
     }
 
+    static createPublicPrivatePair(){
+        return EthCrypto.createIdentity()
+    }
+
     static async encrypt(key, content) {
         const suite = 'aes-128-ctr'
         const cipher = crypto.createCipher(suite,key)

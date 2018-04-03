@@ -266,9 +266,10 @@ class IpfsService {
         }
     }
 
-    async setAuthCredentials(seed, credentials) {
+    async setAuthCredentials(seed, credentials, credentialsData) {
         try {
             await this.writeFile(`/${seed}/auth.txt`, credentials)
+            await this.writeFile(`/${seed}/data.txt`, JSON.stringify(credentialsData))
         }catch(err){
             return false
         }
@@ -278,7 +279,8 @@ class IpfsService {
     async getAuthCredentials(seed){
         try {
             const credentials = await this.readPath(`/${seed}/auth.txt`)
-            return credentials
+            const credentialsData = await this.readPath(`/${seed}/data.txt`)
+            return { credentials, credentialsData: JSON.parse(credentialsData) }
         }catch(err){
             return false
         }
@@ -308,7 +310,7 @@ class IpfsService {
                 if(err) reject(err)
                 else {
                     setTimeout(() => { 
-                        resolve(String.fromCharCode.apply(null, buf._readableState.buffer.tail.data))
+                        resolve(String.fromCharCode.apply(null, buf))
                     }, 5000)
                 }
             })
