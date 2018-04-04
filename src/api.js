@@ -183,41 +183,43 @@ class Api {
      * @param   {Boolean}    authorized  Identity's attestation 
      * @memberof Api
      */
-    async authPooling(identity, seed, authorized) {
+    async authPooling(identity, seed, authPrivKey, cb, auth) {
         const watcher = setTimeout( async () => {
-            authorized = await this.isAuthorized(identity, seed)
-            if(!authorized) await watchCredentials(identity, seed, authorized)
+            auth = await this.checkAuthorized(identity, seed, authPrivKey)
+            await this.watchCredentials(identity, seed, authPrivKey,cb, auth)
         },2000)
     }
 
     /**
      * Watch for Identity's credential attestation
      * 
-     * @param   {String}     identity           Identity's address
-     * @param   {String}     seed               auth seed
-     * @param   {Boolean}    [authorized=false] Identity's attestation
-     * @returns {Boolean}                       Identity is attested
+     * @param   {String}  identity                           Identity's address
+     * @param   {String}  seed                               auth seed
+     * @param   {String}  authPrivKey                        Ecc auth private key. 
+     * @param   {Object}  [authorized={ authorized: false }] Identity's attestation
+     * @returns {Boolean}                                    Identity is attested
      * @memberof Api
      */
-    async watchCredentials(identity, seed, authorized = false){
-        if(!authorized) authPooling(identity, seed, authorized)
-        return authorized
+    async watchCredentials(identity, seed, authPrivKey, cb, auth = { authorized: false }) {
+        if(!auth.authorized) await this.authPooling(identity, seed, authPrivKey, cb, auth)
+        else cb(auth)
     }
+
     /**
      * Attests Identity's credentials
      *
-     * @param   {String}     identity    Identity's address
-     * @param   {String}     seed        auth seed
-     * @returns {Boolean}                Identity is attested
+     * @param   {String}     identity     Identity's address
+     * @param   {String}     seed         auth seed
+     * @param   {String}     authPrivKey  Ecc auth private key. Used to decrypt the auth signature and the identity data
+     * @returns {Object}                  An object that contains a boolean and the Identity's data when authorized
      * @memberof Api
      */ 
-    async isAuthorized(identity, seed, authPrivKey) {
-        let authObject = {
-            authorized : false     
-        }
+    async checkAuthorized(identity, seed, authPrivKey) {
+        let authObject = { authorized : false }
         const authCredentials = await this.ipfsService.getAuthCredentials(seed)
         if(authCredentials) {
-            const signer = await this.web3Service.getCredentialsSigner(seed, authCredentials.credentials)
+            const decryptedSign = await Crypto.decryptEcc(authPrivKey, authCredentials.credentials)
+            const signer = await this.web3Service.getCredentialsSigner(seed, decryptedSign.replace(/^"(.*)"$/, '$1'))
             if(signer) {
                 try {
                     this.IdentityContract.options.address = identity
@@ -226,9 +228,7 @@ class Api {
                     const dataKeys = Object.keys(authCredentials.credentialsData)
                     if(dataKeys.length > 0){
                         let promises = []
-                        dataKeys.forEach(nodeLabel => {
-                            promises.push(this.decryptCredentialsData(authCredentials, nodeLabel, authPrivKey))
-                        })
+                        dataKeys.forEach(nodeLabel => { promises.push(this.decryptCredentialsData(authCredentials, nodeLabel, authPrivKey)) })
                         return Promise.all(promises).then(data => {
                             authObject.data = authCredentials.credentialsData
                             return authObject
@@ -242,7 +242,7 @@ class Api {
 
     async decryptCredentialsData(authCredentials, nodeLabel, authPrivKey){
         const decriptedData = await Crypto.decryptEcc(authPrivKey, authCredentials.credentialsData[nodeLabel])
-        authCredentials.credentialsData[nodeLabel] = decriptedData
+        authCredentials.credentialsData[nodeLabel] = JSON.parse(decriptedData)
     }
 
     /**
@@ -255,7 +255,8 @@ class Api {
      * @memberof Api
      */
     async setCredentials(identity, seed, privateKey, authNodes = []) {
-        const authSignature = await this.web3Service.signCredentials(seed)
+        const signature = await this.web3Service.signCredentials(seed)
+        const authSignature = await Crypto.encryptEcc(seed, JSON.stringify(signature)) 
         if(authNodes){
             const identityTree = await this.getIdentityData(identity, true, privateKey)
             let credentialsData = {}
@@ -264,11 +265,10 @@ class Api {
                 promises.push(this.fillCredentialsData(identityTree, seed, node, credentialsData))
             })
             Promise.all(promises).then(async() => {
-                return await this.ipfsService.setAuthCredentials(seed, authSignature, credentialsData)
+                return await this.ipfsService.setAuthCredentials(seed, JSON.stringify(authSignature), credentialsData)
             })
         }
-        
-        return await this.ipfsService.setAuthCredentials(seed, authSignature, {})
+        return await this.ipfsService.setAuthCredentials(seed, JSON.stringify(authSignature), {})
     }
 
     async fillCredentialsData(tree, seed, authNode, credentialsData){
@@ -278,6 +278,7 @@ class Api {
         credentialsData[authNode.label] = data
         return true
     }
+    
     /**
      * Returns Identity's transactions.
      * 

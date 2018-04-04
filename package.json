@@ -1,10 +1,6 @@
 {
   "name": "@swapynetwork/swapy-identity-api",
-<<<<<<< HEAD
-  "version": "0.0.11",
-=======
   "version": "0.0.14",
->>>>>>> f85e9bd4a66adc68829813f689598b6a216f9070
   "description": "",
   "main": "dist/api.min.js",
   "scripts": {

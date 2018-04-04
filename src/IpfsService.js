@@ -280,7 +280,7 @@ class IpfsService {
         try {
             const credentials = await this.readPath(`/${seed}/auth.txt`)
             const credentialsData = await this.readPath(`/${seed}/data.txt`)
-            return { credentials, credentialsData: JSON.parse(credentialsData) }
+            return { credentials : JSON.parse(credentials), credentialsData: JSON.parse(credentialsData) }
         }catch(err){
             return false
         }
