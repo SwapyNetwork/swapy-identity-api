@@ -67,7 +67,19 @@ class Api {
      */
     getProtocolAddress() { return this.IdentityProtocolContract.options.address }
 
-                 
+    /**
+     * Instantiates a new profile tree.
+     * 
+     * @param   {Object[]}                  [profileDataNodes=[]]    Profile's tree nodes for insertion on IPFS   
+     * @param   {String}                    [publicKey=null]         User's public key. Used to encrypt his data
+     * @returns {Promise<Object, Error>}                             A promise that resolves with the transaction object or rejects with an error
+     * @memberof Api
+     */
+    async createIpfsProfile(profileDataNodes = [], publicKey = null) {
+        const profileHash = await this.ipfsService.initTree(profileDataNodes, publicKey)
+        return profileHash
+    }
+
     /**
      * Instantiates a new personal identity.
      * 
@@ -81,11 +93,10 @@ class Api {
      * @returns {Promise<Object, Error>}                                                         A promise that resolves with the transaction object or rejects with an error
      * @memberof Api
      */
-    async createPersonalIdentity(identityId, profileDataNodes = [], publicKey = null, opt = { from: null, gas: null, gasPrice: null }) {
+    async createPersonalIdentity(identityId, profileHash, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        const profileHash = await this.ipfsService.initTree(profileDataNodes, publicKey)
         return this.IdentityProtocolContract.methods
         .createPersonalIdentity(this.utils.asciiToHex(identityId),this.utils.asciiToHex(profileHash))
         .send({ from, gas, gasPrice })
@@ -106,11 +117,10 @@ class Api {
      * @returns {Promise<Object, Error>}                                                      A promise that resolves with the transaction object or rejects with an error 
      * @memberof Api
      */
-    async createMultiSigIdentity(identityId, owners, required, profileDataNodes = [], publicKey = null, opt = { from: null, gas: null, gasPrice: null }) {
+    async createMultiSigIdentity(identityId, owners, required, profileHash, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        const profileHash = await this.ipfsService.initTree(profileDataNodes, publicKey)
         return this.IdentityProtocolContract.methods
         .createMultiSigIdentity(this.utils.asciiToHex(identityId),this.utils.asciiToHex(profileHash), owners, required)
         .send({ from, gas, gasPrice })
@@ -143,18 +153,23 @@ class Api {
     
     /**
      * Creates a random seed and hash it
-     * 
+     * @param   {Object[]} authNodes        List of requested data 
+     * @param   {String}   authNodes.label  Node label
      * @param   {boolean} [QRencode=false]  generate a QRCode with the hashed seed
      * @returns                             Random hash
      * @memberof Api
      */
-    async getSeed(QRencode = false) {
-        const randomSeed = `${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}${Crypto.randomBytes(4)}`
-        const seedHash = Crypto.sha3_256(randomSeed)
-        const ipfsSuccess = await this.ipfsService.initAuth(seedHash)
+    async initEccAuth(authNodes, QRencode = false) {
+        const eccPair = Crypto.createPublicPrivatePair()
+        const publicKey = eccPair.publicKey
+        const privateKey = eccPair.privateKey
+        const ipfsSuccess = await this.ipfsService.initAuth(publicKey)
         if(ipfsSuccess) {
-            let authObject = { seed : seedHash }
-            if(QRencode) authObject.QRCode = QRCode.getQRUri(seedHash)
+            let authObject = { authNodes, publicKey, privateKey }
+            if(QRencode) {
+                const qrCodeObj = JSON.stringify({publicKey, authNodes})
+                authObject.QRCode = QRCode.getQRUri(qrCodeObj)
+            }
             return authObject
         }else return false
         
@@ -196,34 +211,73 @@ class Api {
      * @returns {Boolean}                Identity is attested
      * @memberof Api
      */ 
-    async isAuthorized(identity, seed) {
-        let authorized = false
+    async isAuthorized(identity, seed, authPrivKey) {
+        let authObject = {
+            authorized : false     
+        }
         const authCredentials = await this.ipfsService.getAuthCredentials(seed)
         if(authCredentials) {
-            const signer = await this.web3Service.getCredentialsSigner(seed, authCredentials)
+            const signer = await this.web3Service.getCredentialsSigner(seed, authCredentials.credentials)
             if(signer) {
                 try {
                     this.IdentityContract.options.address = identity
                     const identityOwner = await this.IdentityContract.methods.owner().call()
-                    authorized = identityOwner == signer
+                    authObject.authorized = identityOwner == signer
+                    const dataKeys = Object.keys(authCredentials.credentialsData)
+                    if(dataKeys.length > 0){
+                        let promises = []
+                        dataKeys.forEach(nodeLabel => {
+                            promises.push(this.decryptCredentialsData(authCredentials, nodeLabel, authPrivKey))
+                        })
+                        return Promise.all(promises).then(data => {
+                            authObject.data = authCredentials.credentialsData
+                            return authObject
+                        })
+                    }
                 }catch(err){}
             } 
         }
-        return authorized        
+        return authObject        
+    }
+
+    async decryptCredentialsData(authCredentials, nodeLabel, authPrivKey){
+        const decriptedData = await Crypto.decryptEcc(authPrivKey, authCredentials.credentialsData[nodeLabel])
+        authCredentials.credentialsData[nodeLabel] = decriptedData
     }
 
     /**
      * Sets Identity's credentials
      * 
-     * @param    {String}    seed  auth seed
-     * @returns  {Promise}         A promise to insert the Credentials on IPFS 
+     * @param    {String}    seed             auth seed
+     * @param    {Object[]}  authNodes        List of requested data 
+     * @param    {String}    authNodes.label  Node label
+     * @returns  {Promise}                    A promise to insert the Credentials on IPFS 
      * @memberof Api
      */
-    async setCredentials(seed) {
+    async setCredentials(identity, seed, privateKey, authNodes = []) {
         const authSignature = await this.web3Service.signCredentials(seed)
-        return await this.ipfsService.setAuthCredentials(seed, authSignature)
+        if(authNodes){
+            const identityTree = await this.getIdentityData(identity, true, privateKey)
+            let credentialsData = {}
+            let promises = []
+            authNodes.map( node => { 
+                promises.push(this.fillCredentialsData(identityTree, seed, node, credentialsData))
+            })
+            Promise.all(promises).then(async() => {
+                return await this.ipfsService.setAuthCredentials(seed, authSignature, credentialsData)
+            })
+        }
+        
+        return await this.ipfsService.setAuthCredentials(seed, authSignature, {})
     }
 
+    async fillCredentialsData(tree, seed, authNode, credentialsData){
+        let treeNode = IdentityDag.dfs(tree, authNode.label)
+        const dataPayload = { data : treeNode.data, salt: treeNode.salt }
+        const data = await Crypto.encryptEcc(seed, JSON.stringify(dataPayload)) 
+        credentialsData[authNode.label] = data
+        return true
+    }
     /**
      * Returns Identity's transactions.
      * 
@@ -306,7 +360,7 @@ class Api {
      */
     async sellIdentityData(identity, saleNodes, privateKey, price = 0) {
         if(!price) saleNodes.forEach(node => {  price += parseInt(node.price) })
-        const sellerTree = await this.getProfileData(identity, true, privateKey)
+        const sellerTree = await this.getIdentityData(identity, true, privateKey)
         saleNodes.map(node => { 
             let treeNode = IdentityDag.dfs(sellerTree, node.label) 
             node.data = treeNode.data
@@ -330,7 +384,7 @@ class Api {
      * @memberof Api
      */
     async checkDataTruth(identity, nodes) {
-        const encryptedTree = await this.getProfileData(identity, true)
+        const encryptedTree = await this.getIdentityData(identity, true)
         let validations = { error : [], success : [] }
         nodes.forEach( node => { 
             let treeNode = IdentityDag.dfs(encryptedTree, node.label)
@@ -423,56 +477,60 @@ class Api {
      * @returns  {Promise<Object, Error>}        A promise that resolves with the transaction object or rejects with an error
      * @memberof Api
      */
-    async getProfileData(identity, fetchData = false, privateKey = null) {
+    async getIdentityData(identity, fetchData = false, privateKey = null) {
         this.IdentityContract.options.address = identity
         const profileHash = await this.IdentityContract.methods.financialData().call()
-        const tree = await this.ipfsService.searchNode(this.utils.hexToAscii(profileHash), 'root', fetchData, privateKey)
+        const tree = await this.getTreeData(this.utils.hexToAscii(profileHash), fetchData, privateKey)
         return tree           
     } 
-                            
+
     /**
-     * Sets a new profile data
+     * Returns a tree located on IPFS
      * 
-     * @param    {Object[]}   profileNodes                                     Identity's tree nodes to be inserted
-     * @param    {String}     identity                                         the identity's contract address             
-     * @param    {String}     publicKey                                        User's public key. Used to encrypt the data
-     * @param    {Boolean}    [multiSig=false]                                 is a multi sig identity 
-     * @param    {Object}     [opt={ from: null, gas: null, gasPrice: null }]  transaction options
-     * @param    {String}     opt.from                                         set the tx sender
-     * @param    {Number}     opt.gas                                          set the tx gas limit
-     * @param    {String}     opt.gasPrice                                     set the tx gas price in gwei 
-     * @returns  {Promise<Object, Error>}                                      A promise that resolves with the transaction object or rejects with an error
+     * @param    {String}  ipfsHash              Tree's IPFS hash
+     * @param    {Boolean} [fetchData=false]     retrieve leafs data or not
+     * @param    {String}  [privateKey=null]     User's private key. Used to decrypt his data 
+     * @returns  {Promise<Object, Error>}        A promise that resolves with the transaction object or rejects with an error
      * @memberof Api
      */
-    async insertProfileData(profileNodes, identity, publicKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
-        const from = opt.from ? opt.from : this.defaultOptions.from
-        const gas = opt.gas ? opt.gas : this.defaultOptions.gas
-        const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
-        if(!multiSig) {
-            this.IdentityContract.options.address = identity
-            const profileHash = await this.IdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes, publicKey)
-            return this.IdentityContract.methods
-            .setFinancialData(this.utils.asciiToHex(newHash))
-            .send({ from, gas, gasPrice })
-        }else{
-            this.MultiSigIdentityContract.options.address = identity
-            const profileHash = await this.MultiSigIdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.insertNodes(this.utils.hexToAscii(profileHash), profileNodes, publicKey)
-            const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(newHash)).encodeABI()
-            return this.MultiSigIdentityContract.methods
-            .addTransaction(identity, 0, txData)
-            .send({ from, gas, gasPrice })
-        }
+    async getTreeData(ipfsHash, fetchData = false, privateKey = null) {
+        const tree = await this.ipfsService.searchNode(ipfsHash, 'root', fetchData, privateKey)
+        return tree           
+    } 
+    
+    /**
+     * Sets new data into an IPFS tree 
+     * 
+     * @param    {String}     ipfsHash       Tree's IPFS hash
+     * @param    {Object[]}   profileNodes   Identity's tree nodes to be inserted
+     * @param    {String}     publicKey      User's public key. Used to encrypt the data
+     * @returns  {Promise<Object, Error>}    A promise that resolves with the transaction object or rejects with an error
+     * @memberof Api
+     */
+    async insertTreeData(ipfsHash, profileNodes, publicKey) {
+        const newHash = await this.ipfsService.insertNodes(ipfsHash, profileNodes, publicKey)
+        return newHash
     }
 
     /**
-     * Updates profile's data
+     * Updates tree's data
+     * @param   {String}  ipfsHash         Tree's IPFS hash
+     * @param   {String}  nodeLabel        Label of the node to be updated 
+     * @param   {String}  data             New data
+     * @param   {String}  publicKey        User's public key. Used to encrypt the data  
+     * @returns {Promise<Object, Error>}   A promise that resolves with the transaction object or rejects with an error 
+     * @memberof Api
+     */
+    async updateTreeData(ipfsHash, nodeLabel, data, publicKey) {
+        const newHash = await this.ipfsService.updateNode(ipfsHash, nodeLabel, data, publicKey)
+        return newHash
+    }
+
+    /**
+     * Updates Identity's profile data
      * 
-     * @param   {String}  nodeLabel                                        Label of the node to be updated 
-     * @param   {String}  data                                             New data
      * @param   {String}  identity                                         Identity's contract address 
-     * @param   {String}  publicKey                                        User's public key. Used to encrypt the data  
+     * @param   {String}  profileHash                                      Tree's IPFS hash  
      * @param   {Boolean} [multiSig=false]                                 is a multi sig identity
      * @param   {Object}  [opt={ from: null, gas: null, gasPrice: null }]  transaction options
      * @param   {String}  opt.from                                         set the tx sender
@@ -481,22 +539,18 @@ class Api {
      * @returns {Promise<Object, Error>}                                   A promise that resolves with the transaction object or rejects with an error 
      * @memberof Api
      */
-    async updateProfileData(nodeLabel, data, identity, publicKey, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
+    async updateIdentityData(identity, profileHash, multiSig = false, opt = { from: null, gas: null, gasPrice: null }) {
         const from = opt.from ? opt.from : this.defaultOptions.from
         const gas = opt.gas ? opt.gas : this.defaultOptions.gas
         const gasPrice = opt.gasPrice ? opt.gasPrice : this.defaultOptions.gasPrice
         if(!multiSig) {
             this.IdentityContract.options.address = identity
-            const profileHash = await this.IdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data, publicKey)
             return this.IdentityContract.methods
-            .setFinancialData(this.utils.asciiToHex(newHash))
+            .setFinancialData(this.utils.asciiToHex(profileHash))
             .send({ from, gas, gasPrice })
         }else{
             this.MultiSigIdentityContract.options.address = identity
-            const profileHash = await this.MultiSigIdentityContract.methods.financialData().call()
-            const newHash = await this.ipfsService.updateNode(this.utils.hexToAscii(profileHash), nodeLabel, data, publicKey)
-            const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(newHash)).encodeABI()
+            const txData = this.MultiSigIdentityContract.methods.setFinancialData(this.utils.asciiToHex(profileHash)).encodeABI()
             return this.MultiSigIdentityContract.methods
             .addTransaction(identity, 0, txData)
             .send({ from, gas, gasPrice })
