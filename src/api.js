@@ -227,10 +227,10 @@ class Api {
                     if(dataKeys.length > 0){
                         let promises = []
                         dataKeys.forEach(nodeLabel => {
-                            promises.push(Crypto.decryptEcc(authPrivKey, authCredentials.credentialsData[nodeLabel]))
+                            promises.push(this.decryptCredentialsData(authCredentials, nodeLabel, authPrivKey))
                         })
                         return Promise.all(promises).then(data => {
-                            authObject.data = data
+                            authObject.data = authCredentials.credentialsData
                             return authObject
                         })
                     }
@@ -238,6 +238,11 @@ class Api {
             } 
         }
         return authObject        
+    }
+
+    async decryptCredentialsData(authCredentials, nodeLabel, authPrivKey){
+        const decriptedData = await Crypto.decryptEcc(authPrivKey, authCredentials.credentialsData[nodeLabel])
+        authCredentials.credentialsData[nodeLabel] = decriptedData
     }
 
     /**
