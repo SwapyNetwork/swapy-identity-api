@@ -2,7 +2,7 @@
   "name": "@swapynetwork/swapy-identity-api",
   "version": "0.0.14",
   "description": "",
-  "main": "dist/api.min.js",
+  "main": "lib/index.js",
   "scripts": {
     "build:npm": "npm run build-es5 && npm run build-dist && npm run build-dist-prod",
     "build": "yarn build-es5 && yarn build-dist && yarn build-dist-prod",
