@@ -77,16 +77,16 @@ class IpfsService {
     * @param   {String}       ipfsHash   The ipfs location       
     * @returns {Promise<String,Error>}   A promise that resolves with the string content or rejects with an error
     */
-    // getData(ipfsHash) {
-    //     return new Promise((resolve, reject) => {
-    //         this.ipfs.files.get(`/ipfs/${ipfsHash}`, (err, data) => {
-    //             if(err) reject(err)
-    //             else resolve(data[0].content.toString())
-    //         })
-    //     })
-    // }
+    getData(ipfsHash) {
+        return new Promise((resolve, reject) => {
+            this.ipfs.files.get(`/ipfs/${ipfsHash}`, (err, data) => {
+                if(err) reject(err)
+                else resolve(data[0].content.toString())
+            })
+        })
+    }
 
-    async getData(ipfsHash) {
+    async getDataFix(ipfsHash) {
         const url = `https://ipfs.swapy.network/${ipfsHash}`
         try {
             const response = await fetch(url)
